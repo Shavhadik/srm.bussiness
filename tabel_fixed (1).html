@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Табель</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Noto+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #17171f;
+    --surface2: #1e1e2a;
+    --border: #2a2a38;
+    --accent: #f0c040;
+    --accent2: #ff6b35;
+    --green: #4ade80;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans', sans-serif;
+    min-height: 100vh;
+    padding: 32px 16px 80px;
+  }
+
+  header { text-align: center; margin-bottom: 32px; }
+
+  header h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px auto 28px;
+    max-width: 800px;
+  }
+
+  .nav-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .month-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 180px;
+    text-align: center;
+  }
+
+  .rate-badge {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .rate-badge:hover { border-color: var(--accent); }
+
+  .sync-status {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 16px;
+    height: 16px;
+    transition: color 0.3s;
+  }
+  .sync-status.ok { color: var(--green); }
+  .sync-status.err { color: var(--accent2); }
+
+  /* PAGE TABS */
+  .page-tabs {
+    display: flex; gap: 8px; justify-content: center;
+    margin: 0 auto 28px; max-width: 800px; flex-wrap: wrap;
+  }
+  .page-tab {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--muted); border-radius: 100px; padding: 8px 20px;
+    font-family: 'Unbounded', sans-serif; font-size: 0.7rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .page-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .page-tab.active { background: var(--accent); color: #0f0f13; border-color: var(--accent); }
+
+  /* ADVANCES HISTORY PAGE */
+  .adv-page { display: none; max-width: 800px; margin: 0 auto; }
+  .adv-page.active { display: block; }
+  .tabel-page { display: block; }
+  .tabel-page.hidden { display: none; }
+
+  .adv-summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px; margin-bottom: 24px;
+  }
+  .adv-summary-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px;
+  }
+  .adv-summary-card .asc-label { font-size: 0.65rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-family: 'Unbounded', sans-serif; margin-bottom: 6px; }
+  .adv-summary-card .asc-val { font-size: 1.3rem; font-weight: 700; font-family: 'Unbounded', sans-serif; color: var(--accent2); }
+
+  .adv-emp-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; margin-bottom: 16px; overflow: hidden;
+  }
+  .adv-emp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .adv-emp-header:hover { background: var(--surface2); }
+  .adv-emp-name { font-family: 'Unbounded', sans-serif; font-size: 0.8rem; font-weight: 600; color: var(--accent); }
+  .adv-emp-total { font-family: 'Unbounded', sans-serif; font-size: 0.85rem; font-weight: 700; color: var(--accent2); }
+  .adv-emp-count { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  .adv-emp-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+  .adv-emp-table th {
+    padding: 10px 18px; text-align: left; font-size: 0.65rem;
+    font-family: 'Unbounded', sans-serif; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--surface2); border-bottom: 1px solid var(--border);
+  }
+  .adv-emp-table td { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+  .adv-emp-table tr:last-child td { border-bottom: none; }
+  .adv-emp-table tr:hover td { background: var(--surface2); }
+  .adv-amount-cell { color: var(--accent2); font-weight: 600; font-family: 'Unbounded', sans-serif; font-size: 0.75rem; }
+  .adv-delete-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 6px; transition: all 0.15s; }
+  .adv-delete-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+
+  .adv-empty { text-align: center; padding: 32px; color: var(--muted); font-size: 0.8rem; }
+
+  .adv-filter-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+  }
+  .adv-filter-select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; padding: 8px 12px;
+    font-family: 'Noto Sans', sans-serif; font-size: 0.8rem; outline: none; cursor: pointer;
+  }
+  .adv-filter-select:focus { border-color: var(--accent); }
+
+  .table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    max-width: 1200px;
+    margin: 0 auto 48px;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+
+  thead tr { background: var(--surface2); }
+
+  th {
+    padding: 12px 8px;
+    text-align: center;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  th:first-child { text-align: left; padding-left: 20px; color: var(--text); min-width: 120px; }
+  th.weekend { color: var(--accent2); opacity: 0.8; }
+
+  td {
+    padding: 0;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid rgba(42,42,56,0.5);
+  }
+  td:first-child {
+    text-align: left;
+    padding: 14px 16px 14px 20px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    position: sticky; left: 0;
+    background: var(--surface);
+    z-index: 1;
+    border-right: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td:first-child { background: var(--surface2); }
+
+  .check-cell {
+    width: 36px; height: 48px;
+    cursor: pointer;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .check-cell:hover { background: rgba(240,192,64,0.07); }
+  .check-cell.active { background: rgba(74,222,128,0.08); }
+  .check-cell.loading { opacity: 0.5; pointer-events: none; }
+
+  .check-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    margin: auto;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    pointer-events: none;
+  }
+  .check-cell.active .check-icon {
+    background: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 10px rgba(74,222,128,0.3);
+  }
+  .check-cell.weekend-day .check-icon { border-color: rgba(255,107,53,0.3); }
+  .check-cell.weekend-day.active .check-icon {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(240,192,64,0.3);
+  }
+  .check-icon svg { display: none; }
+  .check-cell.active .check-icon svg { display: block; }
+
+  /* TOTALS */
+  .totals { max-width: 1200px; margin: 0 auto; }
+
+  .totals-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .totals-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .totals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .total-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 24px 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .total-card:hover { border-color: rgba(240,192,64,0.3); }
+  .total-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .total-card:hover::before { opacity: 1; }
+
+  .employee-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem; font-weight: 600;
+    margin-bottom: 16px; color: var(--text);
+  }
+  .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-value { font-family: 'Unbounded', sans-serif; font-size: 0.8rem; font-weight: 600; color: var(--green); }
+
+  .total-amount {
+    margin-top: 16px; padding-top: 14px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .total-amount .amount {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.1rem; font-weight: 800; color: var(--accent);
+  }
+
+  .advance-btn {
+    background: transparent;
+    border: 1px dashed rgba(255,107,53,0.4);
+    color: var(--accent2);
+    padding: 7px 14px;
+    border-radius: 100px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.6rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    margin-top: 12px; width: 100%;
+  }
+  .advance-btn:hover { border-color: var(--accent2); background: rgba(255,107,53,0.08); }
+
+  .advances-list { margin-top: 10px; }
+  .advance-item {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.7rem; color: var(--muted);
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(42,42,56,0.5);
+  }
+  .advance-item:last-child { border-bottom: none; }
+  .advance-item .adv-amount { color: var(--accent2); font-weight: 600; font-family: 'Unbounded', sans-serif; font-size: 0.65rem; }
+  .advance-item .adv-delete { cursor: pointer; color: var(--muted); margin-left: 8px; font-size: 0.8rem; opacity: 0.5; transition: opacity 0.15s; }
+  .advance-item .adv-delete:hover { opacity: 1; color: #f87171; }
+
+  .total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+  .taken-row { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
+  .taken-amount { font-family: 'Unbounded', sans-serif; font-size: 0.8rem; font-weight: 600; color: var(--accent2); }
+  .remain-amount { font-family: 'Unbounded', sans-serif; font-size: 1.1rem; font-weight: 800; color: var(--green); }
+
+  .bottom-btns { display: flex; justify-content: center; gap: 12px; margin-top: 32px; flex-wrap: wrap; }
+
+  .action-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 24px;
+    border-radius: 100px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.7rem; font-weight: 600;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+  .action-btn.danger:hover { border-color: #f87171; color: #f87171; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%; max-width: 400px;
+  }
+  .modal h3 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--accent); margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .modal input, .modal textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus, .modal textarea:focus { border-color: var(--accent); }
+  .modal textarea { resize: vertical; min-height: 100px; }
+  .modal-btns { display: flex; gap: 10px; margin-top: 8px; }
+  .modal-btn {
+    flex: 1; padding: 12px;
+    border-radius: 10px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    border: none;
+  }
+  .modal-btn.primary { background: var(--accent); color: #0f0f13; }
+  .modal-btn.primary:hover { background: #ffd060; }
+  .modal-btn.secondary { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+  .modal-btn.secondary:hover { color: var(--text); }
+
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    flex-direction: column; gap: 16px;
+    transition: opacity 0.3s;
+  }
+  .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: 'Unbounded', sans-serif; font-size: 0.75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Загрузка данных...</div>
+</div>
+
+<header>
+  <h1>Табель рабочего времени</h1>
+</header>
+
+<div class="controls">
+  <button class="nav-btn" onclick="changeMonth(-1)">‹</button>
+  <div class="month-label" id="monthLabel"></div>
+  <button class="nav-btn" onclick="changeMonth(1)">›</button>
+  <span class="rate-badge" onclick="openRateModal()" title="Нажмите чтобы изменить">⚡ <span id="rateDisplay">12 000</span> ₸ / смена</span>
+</div>
+
+<div class="sync-status" id="syncStatus">Подключение...</div>
+
+<!-- PAGE TABS -->
+<div class="page-tabs">
+  <button class="page-tab active" onclick="switchTab('tabel')">📋 Табель</button>
+  <button class="page-tab" onclick="switchTab('advances')">💰 Взял с кассы</button>
+</div>
+
+<!-- TABEL PAGE -->
+<div class="tabel-page" id="tabel-page">
+
+<div class="table-wrapper">
+  <table id="tabel">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="totals">
+  <div class="totals-title">Итого за месяц</div>
+  <div class="totals-grid" id="totals-grid"></div>
+  <div class="bottom-btns">
+    <button class="action-btn" onclick="openEmployeesModal()">👥 Сотрудники</button>
+    <button class="action-btn danger" onclick="resetMonth()">🗑 Сбросить месяц</button>
+  </div>
+</div>
+
+</div><!-- /tabel-page -->
+
+<!-- ADVANCES HISTORY PAGE -->
+<div class="adv-page" id="advances-page">
+  <div style="max-width:800px;margin:0 auto">
+
+    <div class="adv-filter-bar">
+      <select class="adv-filter-select" id="adv-filter-emp" onchange="renderAdvancesPage()">
+        <option value="">Все сотрудники</option>
+      </select>
+      <select class="adv-filter-select" id="adv-filter-month" onchange="renderAdvancesPage()">
+        <option value="">Текущий месяц</option>
+        <option value="all">Все месяцы</option>
+      </select>
+    </div>
+
+    <div class="adv-summary-grid" id="adv-summary-grid"></div>
+    <div id="adv-emp-blocks"></div>
+  </div>
+</div>
+
+<!-- Advance Modal -->
+<div class="modal-overlay" id="advanceModal">
+  <div class="modal">
+    <h3>💰 Взял с кассы</h3>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px" id="advanceEmpName"></p>
+    <input type="number" id="advanceAmount" placeholder="Сумма в тенге">
+    <input type="date" id="advanceDate">
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="closeModal('advanceModal')">Отмена</button>
+      <button class="modal-btn primary" onclick="saveAdvance()">Записать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rate Modal -->
+<div class="modal-overlay" id="rateModal">
+  <div class="modal">
+    <h3>Ставка за смену</h3>
+    <input type="number" id="rateInput" placeholder="12000">
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="closeModal('rateModal')">Отмена</button>
+      <button class="modal-btn primary" onclick="saveRate()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Employees Modal -->
+<div class="modal-overlay" id="employeesModal">
+  <div class="modal">
+    <h3>Сотрудники</h3>
+    <p style="font-size:0.8rem;color:var(--muted);margin-bottom:12px">Каждый с новой строки</p>
+    <textarea id="employeesInput"></textarea>
+    <div class="modal-btns">
+      <button class="modal-btn secondary" onclick="closeModal('employeesModal')">Отмена</button>
+      <button class="modal-btn primary" onclick="saveEmployees()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://vqwkhhylxmovnphyyrek.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ig5cu5SC87aQjxvX_ltzMQ_hO3FhA3w';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentYear = 2026;
+let currentMonth = 2; // 0-indexed, 2 = March
+let employees = ['Ерлан', 'Меерим', 'Ербол', 'Шавхад'];
+let rate = 12000;
+let checked = {}; // key: "year-month-ei-day" => bool
+let advances = {}; // key: "ei" => [{id, amount, date}]
+let advanceModalEi = -1;
+
+const MONTH_NAMES = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DAY_NAMES = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+
+function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+function isWeekend(y, m, d) { const w = new Date(y, m, d).getDay(); return w===0||w===6; }
+function cellKey(y, m, ei, d) { return `${y}-${m}-${ei}-${d}`; }
+
+async function loadData() {
+  setStatus('Загрузка...', '');
+  const { data, error } = await db.from('tabel').select('*').eq('year', currentYear).eq('month', currentMonth);
+  if (error) { setStatus('Ошибка загрузки: ' + error.message, 'err'); return; }
+  checked = {};
+  (data || []).forEach(row => {
+    checked[cellKey(row.year, row.month, row.employee_index, row.day)] = row.checked;
+  });
+  // load settings
+  const { data: settings } = await db.from('settings').select('*');
+  if (settings) {
+    settings.forEach(s => {
+      if (s.key === 'rate') rate = parseInt(s.value) || 12000;
+      if (s.key === 'employees') {
+        try { employees = JSON.parse(s.value); } catch(e) {}
+      }
+    });
+  }
+  // load advances for current month
+  advances = {};
+  const { data: advData } = await db.from('advances').select('*').eq('year', currentYear).eq('month', currentMonth);
+  (advData || []).forEach(row => {
+    if (!advances[row.employee_index]) advances[row.employee_index] = [];
+    advances[row.employee_index].push({ id: row.id, amount: row.amount, date: row.date });
+  });
+
+  renderTable();
+  renderTotals();
+  setStatus('Синхронизировано ✓', 'ok');
+  document.getElementById('rateDisplay').textContent = rate.toLocaleString('ru-RU');
+  setTimeout(() => setStatus('', ''), 3000);
+}
+
+function setStatus(msg, cls) {
+  const el = document.getElementById('syncStatus');
+  el.textContent = msg;
+  el.className = 'sync-status ' + cls;
+}
+
+function renderTable() {
+  const days = daysInMonth(currentYear, currentMonth);
+  document.getElementById('monthLabel').textContent = `${MONTH_NAMES[currentMonth]} ${currentYear}`;
+
+  // header
+  let h = '<tr><th>Сотрудник</th>';
+  for (let d = 1; d <= days; d++) {
+    const we = isWeekend(currentYear, currentMonth, d);
+    h += `<th class="${we?'weekend':''}">${d}<br><span style="font-size:0.55rem;font-weight:400">${DAY_NAMES[new Date(currentYear,currentMonth,d).getDay()]}</span></th>`;
+  }
+  h += '</tr>';
+  document.getElementById('thead').innerHTML = h;
+
+  // body
+  let b = '';
+  employees.forEach((emp, ei) => {
+    b += `<tr><td>${emp}</td>`;
+    for (let d = 1; d <= days; d++) {
+      const we = isWeekend(currentYear, currentMonth, d);
+      const key = cellKey(currentYear, currentMonth, ei, d);
+      const active = checked[key] ? ' active' : '';
+      b += `<td class="check-cell${we?' weekend-day':''}${active}" onclick="toggle(this,'${key}',${ei},${d})">
+        <div class="check-icon">
+          <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+            <path d="M1 5L4.5 8.5L11 1" stroke="#0f0f13" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </td>`;
+    }
+    b += '</tr>';
+  });
+  document.getElementById('tbody').innerHTML = b;
+}
+
+function renderTotals() {
+  const days = daysInMonth(currentYear, currentMonth);
+  const grid = document.getElementById('totals-grid');
+  grid.innerHTML = '';
+  employees.forEach((emp, ei) => {
+    let shifts = 0;
+    for (let d = 1; d <= days; d++) {
+      if (checked[cellKey(currentYear, currentMonth, ei, d)]) shifts++;
+    }
+    const earned = shifts * rate;
+    const empAdvances = advances[ei] || [];
+    const totalTaken = empAdvances.reduce((s, a) => s + a.amount, 0);
+    const remaining = earned - totalTaken;
+
+    // build advances list html
+    let advHtml = '';
+    if (empAdvances.length > 0) {
+      advHtml = '<div class="advances-list">';
+      empAdvances.sort((a,b) => a.date > b.date ? 1 : -1).forEach(adv => {
+        advHtml += `<div class="advance-item">
+          <span>${adv.date}</span>
+          <span>
+            <span class="adv-amount">−${adv.amount.toLocaleString('ru-RU')} ₸</span>
+            <span class="adv-delete" onclick="deleteAdvance(${ei}, ${adv.id})" title="Удалить">✕</span>
+          </span>
+        </div>`;
+      });
+      advHtml += '</div>';
+    }
+
+    grid.innerHTML += `
+      <div class="total-card">
+        <div class="employee-name">${emp}</div>
+        <div class="stat-row">
+          <span class="stat-label">Смен отработано</span>
+          <span class="stat-value">${shifts} / ${days}</span>
+        </div>
+        <div class="stat-row" style="margin-bottom:0">
+          <span class="stat-label">Начислено</span>
+          <span class="stat-value" style="color:var(--accent)">${earned.toLocaleString('ru-RU')} ₸</span>
+        </div>
+        ${empAdvances.length > 0 ? `
+        <div class="stat-row" style="margin-top:8px;margin-bottom:0">
+          <span class="stat-label">Взято с кассы</span>
+          <span class="taken-amount">−${totalTaken.toLocaleString('ru-RU')} ₸</span>
+        </div>
+        ${advHtml}` : ''}
+        <div class="total-amount">
+          <span class="stat-label">К выплате</span>
+          <span class="amount" style="color:${remaining < 0 ? '#f87171' : 'var(--accent)'}">${remaining.toLocaleString('ru-RU')} ₸</span>
+        </div>
+        <button class="advance-btn" onclick="openAdvanceModal(${ei})">💰 Взял с кассы</button>
+      </div>`;
+  });
+}
+
+function openAdvanceModal(ei) {
+  advanceModalEi = ei;
+  document.getElementById('advanceEmpName').textContent = employees[ei];
+  document.getElementById('advanceAmount').value = '';
+  // set date to today
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  document.getElementById('advanceDate').value = `${yyyy}-${mm}-${dd}`;
+  document.getElementById('advanceModal').classList.add('open');
+}
+
+// ── TABS ──
+let allAdvances = []; // all advances across months
+
+function switchTab(tab) {
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  if(tab === 'tabel') {
+    document.getElementById('tabel-page').style.display = 'block';
+    document.getElementById('advances-page').classList.remove('active');
+  } else {
+    document.getElementById('tabel-page').style.display = 'none';
+    document.getElementById('advances-page').classList.add('active');
+    loadAndRenderAdvances();
+  }
+}
+
+async function loadAndRenderAdvances() {
+  setStatus('Загрузка...', 'ok');
+  const { data, error } = await db.from('advances').select('*').order('date', {ascending: false});
+  if(error) { setStatus('Ошибка загрузки', 'err'); return; }
+  allAdvances = data || [];
+  populateAdvEmpFilter();
+  renderAdvancesPage();
+  setStatus('', '');
+}
+
+function populateAdvEmpFilter() {
+  const sel = document.getElementById('adv-filter-emp');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Все сотрудники</option>' +
+    employees.map((e,i) => `<option value="${i}">${e}</option>`).join('');
+  sel.value = cur;
+}
+
+function renderAdvancesPage() {
+  const filterEmp = document.getElementById('adv-filter-emp')?.value;
+  const filterMonth = document.getElementById('adv-filter-month')?.value;
+
+  let list = allAdvances;
+  if(filterEmp !== '') list = list.filter(a => String(a.employee_index) === String(filterEmp));
+  if(filterMonth !== 'all') {
+    list = list.filter(a => a.year === currentYear && a.month === currentMonth);
+  }
+
+  // summary cards
+  const totalSum = list.reduce((s,a) => s + a.amount, 0);
+  const byEmp = {};
+  list.forEach(a => { byEmp[a.employee_index] = (byEmp[a.employee_index]||0) + a.amount; });
+  const topEmp = Object.entries(byEmp).sort((a,b)=>b[1]-a[1])[0];
+
+  const grid = document.getElementById('adv-summary-grid');
+  if(grid) grid.innerHTML = `
+    <div class="adv-summary-card">
+      <div class="asc-label">Всего взято</div>
+      <div class="asc-val">${list.reduce((s,a)=>s+a.amount,0).toLocaleString('ru-RU')} ₸</div>
+    </div>
+    <div class="adv-summary-card">
+      <div class="asc-label">Записей</div>
+      <div class="asc-val" style="color:var(--accent)">${list.length}</div>
+    </div>
+    <div class="adv-summary-card">
+      <div class="asc-label">Больше всех</div>
+      <div class="asc-val" style="color:var(--accent);font-size:0.9rem">${topEmp ? employees[topEmp[0]]||'—' : '—'}</div>
+    </div>
+  `;
+
+  // group by employee
+  const blocks = document.getElementById('adv-emp-blocks');
+  if(!blocks) return;
+
+  if(!list.length) {
+    blocks.innerHTML = '<div class="adv-empty">💰 Записей нет за этот период</div>';
+    return;
+  }
+
+  // group
+  const grouped = {};
+  list.forEach(a => {
+    const ei = a.employee_index;
+    if(!grouped[ei]) grouped[ei] = [];
+    grouped[ei].push(a);
+  });
+
+  blocks.innerHTML = Object.entries(grouped)
+    .sort((a,b) => b[1].reduce((s,x)=>s+x.amount,0) - a[1].reduce((s,x)=>s+x.amount,0))
+    .map(([ei, advs]) => {
+      const empName = employees[ei] || `Сотрудник ${ei}`;
+      const total = advs.reduce((s,a) => s+a.amount, 0);
+      const rows = advs.map(a => {
+        const d = new Date(a.date);
+        const dateStr = d.toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'});
+        const monthName = d.toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+        return `<tr>
+          <td>${dateStr}</td>
+          <td style="color:var(--muted);font-size:0.75rem">${monthName}</td>
+          <td class="adv-amount-cell">${a.amount.toLocaleString('ru-RU')} ₸</td>
+          <td><button class="adv-delete-btn" onclick="deleteAdvanceFromHistory(${ei},'${a.id}')">🗑</button></td>
+        </tr>`;
+      }).join('');
+
+      return `<div class="adv-emp-block">
+        <div class="adv-emp-header" onclick="toggleAdvBlock(this)">
+          <div>
+            <div class="adv-emp-name">${empName}</div>
+            <div class="adv-emp-count">${advs.length} записей</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="adv-emp-total">${total.toLocaleString('ru-RU')} ₸</div>
+            <div style="color:var(--muted);font-size:0.8rem">▼</div>
+          </div>
+        </div>
+        <div class="adv-block-body">
+          <table class="adv-emp-table">
+            <thead><tr><th>Дата</th><th>Месяц</th><th>Сумма</th><th></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+function toggleAdvBlock(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector('div:last-child div:last-child');
+  if(body.style.display === 'none') {
+    body.style.display = 'block';
+    if(arrow) arrow.textContent = '▼';
+  } else {
+    body.style.display = 'none';
+    if(arrow) arrow.textContent = '▶';
+  }
+}
+
+async function deleteAdvanceFromHistory(ei, id) {
+  if(!confirm('Удалить эту запись?')) return;
+  const { error } = await db.from('advances').delete().eq('id', id);
+  if(error) { setStatus('Ошибка', 'err'); return; }
+  // update local advances too
+  if(advances[ei]) advances[ei] = advances[ei].filter(a => a.id !== id);
+  allAdvances = allAdvances.filter(a => a.id !== id);
+  renderAdvancesPage();
+  renderTotals();
+  setStatus('Удалено ✓', 'ok');
+  setTimeout(() => setStatus('',''), 2000);
+}
+
+async function saveAdvance() {
+  const amount = parseInt(document.getElementById('advanceAmount').value);
+  const date = document.getElementById('advanceDate').value;
+  if (!amount || amount <= 0) { setStatus('Введите сумму', 'err'); return; }
+  if (!date) { setStatus('Выберите дату', 'err'); return; }
+
+  setStatus('Сохранение...', 'ok');
+
+  const { data, error } = await db.from('advances').insert({
+    year: currentYear, month: currentMonth,
+    employee_index: advanceModalEi,
+    amount: amount,
+    date: date
+  }).select().single();
+
+  if (error) { 
+    console.error(error);
+    setStatus('Ошибка: ' + error.message, 'err'); 
+    return; 
+  }
+
+  if (!advances[advanceModalEi]) advances[advanceModalEi] = [];
+  advances[advanceModalEi].push({ id: data.id, amount, date });
+  renderTotals();
+  setStatus('Записано ✓', 'ok');
+  setTimeout(() => setStatus('', ''), 2000);
+  closeModal('advanceModal');
+}
+
+async function deleteAdvance(ei, id) {
+  if (!confirm('Удалить эту запись?')) return;
+  const { error } = await db.from('advances').delete().eq('id', id);
+  if (error) { setStatus('Ошибка удаления', 'err'); return; }
+  advances[ei] = (advances[ei] || []).filter(a => a.id !== id);
+  renderTotals();
+  setStatus('Удалено ✓', 'ok');
+  setTimeout(() => setStatus('', ''), 2000);
+}
+
+async function toggle(cell, key, ei, day) {
+  cell.classList.add('loading');
+  const nowActive = !checked[key];
+  checked[key] = nowActive;
+  if (nowActive) cell.classList.add('active'); else cell.classList.remove('active');
+  renderTotals();
+
+  const { error } = await db.from('tabel').upsert({
+    year: currentYear, month: currentMonth,
+    employee_index: ei, day: day,
+    checked: nowActive
+  }, { onConflict: 'year,month,employee_index,day' });
+
+  cell.classList.remove('loading');
+  if (error) {
+    setStatus('Ошибка сохранения', 'err');
+    checked[key] = !nowActive;
+    if (!nowActive) cell.classList.add('active'); else cell.classList.remove('active');
+    renderTotals();
+  } else {
+    setStatus('Сохранено ✓', 'ok');
+    setTimeout(() => setStatus('', ''), 2000);
+  }
+}
+
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  loadData();
+}
+
+async function resetMonth() {
+  if (!confirm(`Сбросить все отметки за ${MONTH_NAMES[currentMonth]} ${currentYear}?`)) return;
+  await db.from('tabel').delete().eq('year', currentYear).eq('month', currentMonth);
+  await loadData();
+}
+
+function openRateModal() {
+  document.getElementById('rateInput').value = rate;
+  document.getElementById('rateModal').classList.add('open');
+}
+
+async function saveRate() {
+  const val = parseInt(document.getElementById('rateInput').value);
+  if (!val || val <= 0) return;
+  rate = val;
+  document.getElementById('rateDisplay').textContent = rate.toLocaleString('ru-RU');
+  await db.from('settings').upsert({ key: 'rate', value: String(rate) }, { onConflict: 'key' });
+  renderTotals();
+  closeModal('rateModal');
+}
+
+function openEmployeesModal() {
+  document.getElementById('employeesInput').value = employees.join('\n');
+  document.getElementById('employeesModal').classList.add('open');
+}
+
+async function saveEmployees() {
+  const val = document.getElementById('employeesInput').value;
+  const list = val.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!list.length) return;
+  employees = list;
+  await db.from('settings').upsert({ key: 'employees', value: JSON.stringify(employees) }, { onConflict: 'key' });
+  renderTable();
+  renderTotals();
+  closeModal('employeesModal');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// init
+(async () => {
+  // ensure tables exist via upsert approach — just load
+  await loadData();
+  document.getElementById('loadingOverlay').classList.add('hidden');
+})();
+
+// realtime sync
+db.channel('tabel-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'tabel' }, payload => {
+    const r = payload.new || payload.old;
+    if (r && r.year === currentYear && r.month === currentMonth) {
+      if (payload.eventType === 'DELETE') {
+        checked[cellKey(r.year, r.month, r.employee_index, r.day)] = false;
+      } else {
+        checked[cellKey(r.year, r.month, r.employee_index, r.day)] = r.checked;
+      }
+      renderTable();
+      renderTotals();
+    }
+  })
+  .subscribe();
+</script>
+</body>
+</html>
