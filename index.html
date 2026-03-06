@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ф<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -383,1147 +383,67 @@ tbody tr:hover { background:#fafbff; }
 }
 </style>
 </head>
-<body>
-
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-  <div class="loading-text">Загрузка данных...</div>
-</div>
-
-<!-- LOGIN -->
-<div class="login-screen" id="loginScreen">
-  <div class="login-box">
-    <div style="font-family:'Playfair Display',serif;font-size:52px;font-weight:800;color:var(--accent);margin-bottom:8px;letter-spacing:-0.02em">АйБи</div>
-    <div class="login-title">Система учёта бизнеса</div>
-    <div class="login-sub">Введите пароль для входа</div>
-    <div class="form-group">
-      <input type="password" class="form-input" id="login-pwd" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:18px;letter-spacing:4px">
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Войти</button>
-    <div class="login-error" id="login-error">Неверный пароль</div>
-  </div>
-</div>
-
-<div class="toast" id="toast"></div>
-<button class="hamburger" onclick="toggleSidebar()">☰</button>
-
-<!-- TOP BAR -->
-<div class="topbar" id="topbar" style="display:none">
-  <div style="position:relative;flex:1;max-width:400px">
-    <input type="text" class="search-global" placeholder="🔍 Поиск клиентов, продаж, расходов..." id="global-search" oninput="globalSearch()" onfocus="showSearchResults()" onblur="setTimeout(hideSearchResults,200)">
-    <div class="search-results" id="search-results"></div>
-  </div>
-  <div class="topbar-actions">
-    <div id="stock-indicator" style="font-size:12px;font-weight:600;display:none"></div>
-    <button class="theme-btn" onclick="toggleTheme()" title="Тёмная/светлая тема" id="theme-btn">🌙</button>
-    <button class="btn btn-ghost btn-sm" onclick="goPage('report')">📅 Отчёт</button>
-    <button class="btn btn-ghost btn-sm" onclick="backupData()">💾 Бэкап</button>
-    <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="color:var(--red)">Выйти</button>
-  </div>
-</div>
-
-<!-- SIDEBAR -->
-<div class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div><div class="logo-text">АйБи</div><div class="logo-sub">Учёт бизнеса</div></div>
-  </div>
-
-  <div class="nav-section">Главное</div>
-  <div class="nav-item active" onclick="goPage('dashboard')">
-    <div class="nav-icon">📊</div> Главная
-  </div>
-  <div class="nav-item" onclick="goPage('sales')">
-    <div class="nav-icon">💰</div> Продажи
-    <span class="nav-badge" id="badge-sales" style="display:none">0</span>
-  </div>
-  <div class="nav-item" onclick="goPage('clients')">
-    <div class="nav-icon">👥</div> Клиенты
-  </div>
-
-  <div class="nav-section">Финансы</div>
-  <div class="nav-item" onclick="goPage('debts')">
-    <div class="nav-icon">📋</div> Долги
-    <span class="nav-badge" id="badge-debts" style="display:none">0</span>
-  </div>
-  <div class="nav-item" onclick="goPage('konus')">
-    <div class="nav-icon">🔺</div> Конусы
-    <span class="nav-badge" id="badge-konus" style="display:none">0</span>
-  </div>
-  <div class="nav-item" onclick="goPage('exchanges')">
-    <div class="nav-icon">🔄</div> Обмены
-  </div>
-  <div class="nav-item" onclick="goPage('expenses')">
-    <div class="nav-icon">💸</div> Расходы
-  </div>
-
-  <div class="nav-section">Закупки</div>
-  <div class="nav-item" onclick="goPage('purchases')">
-    <div class="nav-icon">🛒</div> Закупки
-  </div>
-  <div class="nav-item" onclick="goPage('suppliers')">
-    <div class="nav-icon">🏭</div> Поставщики
-  </div>
-  <div class="nav-section">Склад</div>
-  <div class="nav-item" onclick="goPage('warehouse')">
-    <div class="nav-icon">📦</div> Производство
-  </div>
-  <div class="nav-item" onclick="goPage('inventory')">
-    <div class="nav-icon">🔢</div> Ревизия
-  </div>
-  <div class="nav-section">Аналитика</div>
-  <div class="nav-item" onclick="goPage('analytics')">
-    <div class="nav-icon">📈</div> Графики
-  </div>
-  <div class="nav-item" onclick="goPage('report')">
-    <div class="nav-icon">📅</div> Отчёты
-  </div>
-  <div class="nav-item" onclick="goPage('rentab')">
-    <div class="nav-icon">💹</div> Рентабельность
-  </div>
-  <div class="nav-item" onclick="goPage('recipe')">
-    <div class="nav-icon">🧮</div> Себестоимость
-  </div>
-
-  <div class="sidebar-bottom">
-    <div class="nav-item" onclick="goPage('history')">
-      <div class="nav-icon">🕓</div> История
-    </div>
-    <div class="nav-item" onclick="goPage('settings')">
-      <div class="nav-icon">⚙️</div> Настройки
-    </div>
-  </div>
-</div>
-
-<!-- MAIN -->
-<div class="main" id="main-content" style="padding-top:80px">
-
-<!-- ═══════════ DASHBOARD ═══════════ -->
-<div class="page active" id="page-dashboard">
-  <div class="page-header">
-    <div class="page-header-left">
-      <h1>Главная</h1>
-      <p id="dash-date-str"></p>
-    </div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="loadAll().then(renderAll)">🔄 Обновить</button>
-    </div>
-  </div>
-
-  <div class="stock-warning" id="stock-warning">
-    ⚠️ <span id="stock-warning-text">Товар на складе заканчивается!</span>
-  </div>
-
-  <button class="quick-sale-btn" onclick="openQuickSale()">
-    <span class="qs-icon">⚡</span>
+<body> <div class="loading-overlay" id="loadingOverlay"> <div class="spinner"></div> <div class="loading-text">Загрузка данных...</div>
+</div> <div class="login-screen" id="loginScreen"> <div class="login-box"> <div style="font-family:'Playfair Display',serif;font-size:52px;font-weight:800;color:var(--accent);margin-bottom:8px;letter-spacing:-0.02em">АйБи</div> <div class="login-title">Система учёта бизнеса</div> <div class="login-sub">Введите пароль для входа</div> <div class="form-group"> <input type="password" class="form-input" id="login-pwd" placeholder="Пароль" onkeydown="if(event.key==='Enter')doLogin()" style="text-align:center;font-size:18px;letter-spacing:4px"> </div> <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Войти</button> <div class="login-error" id="login-error">Неверный пароль</div> </div>
+</div> <div class="toast" id="toast"></div>
+<button class="hamburger" onclick="toggleSidebar()">☰</button> <div class="topbar" id="topbar" style="display:none"> <div style="position:relative;flex:1;max-width:400px"> <input type="text" class="search-global" placeholder="🔍 Поиск клиентов, продаж, расходов..." id="global-search" oninput="globalSearch()" onfocus="showSearchResults()" onblur="setTimeout(hideSearchResults,200)"> <div class="search-results" id="search-results"></div> </div> <div class="topbar-actions"> <div id="stock-indicator" style="font-size:12px;font-weight:600;display:none"></div> <button class="theme-btn" onclick="toggleTheme()" title="Тёмная/светлая тема" id="theme-btn">🌙</button> <button class="btn btn-ghost btn-sm" onclick="goPage('report')">📅 Отчёт</button> <button class="btn btn-ghost btn-sm" onclick="backupData()">💾 Бэкап</button> <button class="btn btn-ghost btn-sm" onclick="doLogout()" style="color:var(--red)">Выйти</button> </div>
+</div> <div class="sidebar" id="sidebar"> <div class="sidebar-logo"> <div><div class="logo-text">АйБи</div><div class="logo-sub">Учёт бизнеса</div></div> </div> <div class="nav-section">Главное</div> <div class="nav-item active" onclick="goPage('dashboard')"> <div class="nav-icon">📊</div> Главная
+  </div> <div class="nav-item" onclick="goPage('sales')"> <div class="nav-icon">💰</div> Продажи
+    <span class="nav-badge" id="badge-sales" style="display:none">0</span> </div> <div class="nav-item" onclick="goPage('clients')"> <div class="nav-icon">👥</div> Клиенты
+  </div> <div class="nav-section">Финансы</div> <div class="nav-item" onclick="goPage('debts')"> <div class="nav-icon">📋</div> Долги
+    <span class="nav-badge" id="badge-debts" style="display:none">0</span> </div> <div class="nav-item" onclick="goPage('konus')"> <div class="nav-icon">🔺</div> Конусы
+    <span class="nav-badge" id="badge-konus" style="display:none">0</span> </div> <div class="nav-item" onclick="goPage('exchanges')"> <div class="nav-icon">🔄</div> Обмены
+  </div> <div class="nav-item" onclick="goPage('expenses')"> <div class="nav-icon">💸</div> Расходы
+  </div> <div class="nav-section">Закупки</div> <div class="nav-item" onclick="goPage('purchases')"> <div class="nav-icon">🛒</div> Закупки
+  </div> <div class="nav-item" onclick="goPage('suppliers')"> <div class="nav-icon">🏭</div> Поставщики
+  </div> <div class="nav-section">Склад</div> <div class="nav-item" onclick="goPage('warehouse')"> <div class="nav-icon">📦</div> Производство
+  </div> <div class="nav-item" onclick="goPage('inventory')"> <div class="nav-icon">🔢</div> Ревизия
+  </div> <div class="nav-section">Аналитика</div> <div class="nav-item" onclick="goPage('analytics')"> <div class="nav-icon">📈</div> Графики
+  </div> <div class="nav-item" onclick="goPage('report')"> <div class="nav-icon">📅</div> Отчёты
+  </div> <div class="nav-item" onclick="goPage('rentab')"> <div class="nav-icon">💹</div> Рентабельность
+  </div> <div class="nav-item" onclick="goPage('recipe')"> <div class="nav-icon">🧮</div> Себестоимость
+  </div> <div class="sidebar-bottom"> <div class="nav-item" onclick="goPage('history')"> <div class="nav-icon">🕓</div> История
+    </div> <div class="nav-item" onclick="goPage('settings')"> <div class="nav-icon">⚙️</div> Настройки
+    </div> </div>
+</div> <div class="main" id="main-content" style="padding-top:80px"> <div class="page active" id="page-dashboard"> <div class="page-header"> <div class="page-header-left"> <h1>Главная</h1> <p id="dash-date-str"></p> </div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="loadAll().then(renderAll)">🔄 Обновить</button> </div> </div> <div class="stock-warning" id="stock-warning">
+    ⚠️ <span id="stock-warning-text">Товар на складе заканчивается!</span> </div> <button class="quick-sale-btn" onclick="openQuickSale()"> <span class="qs-icon">⚡</span>
     Быстрая продажа
-    <span style="font-size:13px;opacity:0.8;font-weight:400">нажми и внеси за 5 секунд</span>
-  </button>
-
-  <div class="cards" id="dash-cards">
-    <div class="card"><div class="card-icon" style="background:#e0f2fe">💰</div><div class="card-label">Выручка сегодня</div><div class="card-value green" id="dc-today">0 ₸</div><div class="card-sub" id="dc-today-count"></div></div>
-    <div class="card"><div class="card-icon" style="background:#d1fae5">📅</div><div class="card-label">Выручка за месяц</div><div class="card-value" id="dc-month">0 ₸</div><div class="card-sub" id="dc-month-name"></div></div>
-    <div class="card" onclick="goPage('debts')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">📋</div><div class="card-label">Долги клиентов</div><div class="card-value" style="color:var(--yellow)" id="dc-debts">0 ₸</div><div class="card-sub" id="dc-debts-count"></div></div>
-    <div class="card" onclick="goPage('konus')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">🔺</div><div class="card-label">Конусы (активных)</div><div class="card-value" style="color:var(--yellow)" id="dc-konus">0 ₸</div><div class="card-sub" id="dc-konus-count"></div></div>
-    <div class="card"><div class="card-icon" style="background:#ede9fe">📦</div><div class="card-label">Остаток склада</div><div class="card-value" id="dc-stock">0 кг</div><div class="card-sub">пряников</div></div>
-    <div class="card"><div class="card-icon" style="background:#fee2e2">💸</div><div class="card-label">Расходы месяц</div><div class="card-value" style="color:var(--red)" id="dc-exp">0 ₸</div></div>
-    <div class="card"><div class="card-icon" style="background:#d1fae5">📈</div><div class="card-label">Прибыль месяц</div><div class="card-value" id="dc-profit">0 ₸</div></div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px" class="chart-row">
-    <div class="card"><div class="card-icon" style="background:#e0f2fe;font-size:20px">💵</div><div class="card-label">Наличные сегодня</div><div class="card-value" id="dc-cash">0 ₸</div></div>
-    <div class="card"><div class="card-icon" style="background:#fee2e2;font-size:20px">🔴</div><div class="card-label">Каспи сегодня</div><div class="card-value" id="dc-kaspi">0 ₸</div></div>
-    <div class="card"><div class="card-icon" style="background:#ede9fe;font-size:20px">📱</div><div class="card-label">Каспи Pay / QR</div><div class="card-value" id="dc-kaspipay">0 ₸</div></div>
-    <div class="card"><div class="card-icon" style="background:#fef3c7;font-size:20px">🔺</div><div class="card-label">Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="dc-konus-today">0 ₸</div></div>
-  </div>
-
-  <div class="section-label">Последние продажи сегодня</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Время</th><th>Клиент</th><th>Кг</th><th>Сумма</th><th>Оплата</th><th></th></tr></thead>
-      <tbody id="dash-sales-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ SALES ═══════════ -->
-<div class="page" id="page-sales">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Продажи</h1><p>История всех продаж</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportSalesExcel()">📥 Excel</button>
-      <button class="btn btn-primary" onclick="openQuickSale()">⚡ Новая продажа</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-    <div class="card"><div class="card-label">Выручка сегодня</div><div class="card-value green" id="s-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">Этот месяц</div><div class="card-value" id="s-month">0 ₸</div></div>
-    <div class="card"><div class="card-label">Продаж сегодня</div><div class="card-value" id="s-cnt">0</div></div>
-    <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
-    <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div>
-  </div>
-
-  <!-- Summary by payment -->
-  <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="s-pay-summary"></div>
-
-  <div class="filters">
-    <input type="date" class="filter-input" id="sf-date" onchange="renderSalesTable()">
-    <input type="text" class="filter-input" placeholder="🔍 Поиск клиента" id="sf-search" oninput="renderSalesTable()" style="width:200px">
-    <select class="filter-input" id="sf-pay" onchange="renderSalesTable()">
-      <option value="">Все оплаты</option>
-      <option value="cash">💵 Наличные</option>
-      <option value="kaspi">🔴 Каспи</option>
-      <option value="kaspipay">📱 Каспи Pay</option>
-      <option value="debt">📋 В долг</option>
-      <option value="konus">🔺 Конус</option>
-    </select>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-date').value='';document.getElementById('sf-search').value='';document.getElementById('sf-pay').value='';renderSalesTable()">Сбросить</button>
-  </div>
-
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">История продаж</div>
-      <div id="sf-summary-text" style="font-size:12px;color:var(--text2)"></div>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата / Время</th><th>Клиент</th><th>Товар (кг)</th><th>Цена/кг</th><th>Скидка</th><th>Итого</th><th>Оплата</th><th>Себест.</th><th>Прибыль</th><th></th></tr></thead>
-      <tbody id="sales-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ CLIENTS ═══════════ -->
-<div class="page" id="page-clients">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Клиенты</h1><p>База клиентов и статистика</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-primary" onclick="openClientModal()">+ Добавить клиента</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card"><div class="card-label">Всего клиентов</div><div class="card-value" id="cl-total">0</div></div>
-    <div class="card"><div class="card-label">С долгом</div><div class="card-value" style="color:var(--red)" id="cl-debt-cnt">0</div></div>
-    <div class="card"><div class="card-label">С обменом</div><div class="card-value" style="color:var(--yellow)" id="cl-exch-cnt">0</div></div>
-  </div>
-  <div class="filters">
-    <input type="text" class="filter-input" placeholder="🔍 Поиск по имени, магазину, телефону" id="cl-search" oninput="renderClients()" style="width:300px">
-    <select class="filter-input" id="cl-type-filter" onchange="renderClients()">
-      <option value="">Все типы</option>
-      <option value="retail">Розница</option>
-      <option value="wholesale">Оптовик</option>
-      <option value="shop">Магазин</option>
-      <option value="conusniy">Конусный</option>
-    </select>
-  </div>
-  <div id="clients-list"></div>
-</div>
-
-<!-- ═══════════ DEBTS ═══════════ -->
-<div class="page" id="page-debts">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Долги</h1><p>Кто и сколько должен</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-warning" onclick="openDebtModal()">+ Добавить долг</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card"><div class="card-label">Общий долг</div><div class="card-value" style="color:var(--red)" id="dbt-total">0 ₸</div></div>
-    <div class="card"><div class="card-label">Должников</div><div class="card-value" id="dbt-cnt">0</div></div>
-    <div class="card"><div class="card-label">Погашено (месяц)</div><div class="card-value" style="color:var(--green)" id="dbt-paid">0 ₸</div></div>
-  </div>
-  <div class="section-label">Активные долги</div>
-  <div id="debts-list"></div>
-  <div class="section-label" style="margin-top:24px">История погашений</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Клиент</th><th>Товар взят</th><th>Сумма долга</th><th>Оплачено</th><th>Как вернул</th><th>Заметка</th><th></th></tr></thead>
-      <tbody id="debt-hist-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ KONUS ═══════════ -->
-<div class="page" id="page-konus">
-  <div class="page-header">
-    <div class="page-header-left"><h1>🔺 Конусы</h1><p>Клиенты платят за прошлую партию</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-warning" onclick="openKonusPayModal()">+ Оплата по конусу</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card"><div class="card-label">Активных конусов</div><div class="card-value" style="color:var(--yellow)" id="kon-cnt">0</div></div>
-    <div class="card"><div class="card-label">Общая сумма</div><div class="card-value" style="color:var(--red)" id="kon-sum">0 ₸</div></div>
-    <div class="card"><div class="card-label">Оплачено (месяц)</div><div class="card-value" style="color:var(--green)" id="kon-paid">0 ₸</div></div>
-  </div>
-  <div class="section-label">Активные конусы</div>
-  <div id="konus-list"></div>
-  <div class="section-label" style="margin-top:24px">История оплат по конусам</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата оплаты</th><th>Клиент</th><th>Оплатил за партию</th><th>Сумма оплаты</th><th>Остаток</th><th>Заметка</th></tr></thead>
-      <tbody id="konus-hist-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ EXCHANGES ═══════════ -->
-<div class="page" id="page-exchanges">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Обмены</h1><p>Испорченный товар к замене</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-warning" onclick="openExchangeModal()">+ Обмен</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-    <div class="card"><div class="card-label">Активных обменов</div><div class="card-value" style="color:var(--yellow)" id="exch-cnt">0</div></div>
-    <div class="card"><div class="card-label">Сумма к возврату</div><div class="card-value" style="color:var(--red)" id="exch-sum">0 ₸</div></div>
-    <div class="card"><div class="card-label">🔺 Кг к обмену</div><div class="card-value" id="exch-kg">0</div></div>
-    <div class="card"><div class="card-label">Всего обменов</div><div class="card-value" id="exch-total-cnt">0</div></div>
-    <div class="card"><div class="card-label">Всего кг обменяно</div><div class="card-value" style="color:var(--red)" id="exch-total-kg">0</div></div>
-    <div class="card"><div class="card-label">Потери ₸</div><div class="card-value" style="color:var(--red)" id="exch-total-sum">0 ₸</div></div>
-  </div>
-  <div id="exchanges-list"></div>
-</div>
-
-<!-- ═══════════ EXPENSES ═══════════ -->
-<div class="page" id="page-expenses">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Расходы</h1><p>Все затраты бизнеса</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportExpensesExcel()">📥 Excel</button>
-      <button class="btn btn-danger" onclick="openExpenseModal()">+ Расход</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(4,1fr)">
-    <div class="card"><div class="card-label">Сегодня</div><div class="card-value" style="color:var(--red)" id="e-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">Этот месяц</div><div class="card-value" style="color:var(--red)" id="e-month">0 ₸</div></div>
-    <div class="card"><div class="card-label">Этот год</div><div class="card-value" id="e-year">0 ₸</div></div>
-    <div class="card"><div class="card-label">Записей</div><div class="card-value" id="e-cnt">0</div></div>
-  </div>
-  <div class="filters">
-    <input type="date" class="filter-input" id="ef-from" onchange="renderExpenses()">
-    <span style="color:var(--text2);font-size:12px">—</span>
-    <input type="date" class="filter-input" id="ef-to" onchange="renderExpenses()">
-    <select class="filter-input" id="ef-cat" onchange="renderExpenses()">
-      <option value="">Все категории</option>
-    </select>
-    <button class="btn btn-ghost btn-sm" onclick="clearExpFilters()">Сбросить</button>
-  </div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Категория</th><th>Сотрудник</th><th>Сумма</th><th>Описание</th><th></th></tr></thead>
-      <tbody id="exp-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ WAREHOUSE ═══════════ -->
-<div class="page" id="page-warehouse">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Склад</h1><p>Производство и остатки</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-success" onclick="openProduceModal()">+ Производство</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(4,1fr)">
-    <div class="card"><div class="card-label">Остаток</div><div class="card-value" style="color:var(--accent)" id="wh-stock">0 кг</div></div>
-    <div class="card"><div class="card-label">Произведено всего</div><div class="card-value" id="wh-prod">0 кг</div></div>
-    <div class="card"><div class="card-label">Продано всего</div><div class="card-value" id="wh-sold">0 кг</div></div>
-    <div class="card"><div class="card-label">Себест./кг</div><div class="card-value" id="wh-cost">0 ₸</div></div>
-  </div>
-  <div class="section-label">История производства</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Кг</th><th>Себест./кг</th><th>Итого затрат</th><th>Заметка</th><th></th></tr></thead>
-      <tbody id="wh-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ ANALYTICS ═══════════ -->
-<div class="page" id="page-analytics">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Аналитика</h1><p>Графики и отчёты</p></div>
-    <div class="page-header-actions">
-      <select class="filter-input" id="an-range" onchange="renderAnalytics()">
-        <option value="7">7 дней</option>
-        <option value="30" selected>30 дней</option>
-        <option value="90">3 месяца</option>
-      </select>
-      <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Отчёт Excel</button>
-    </div>
-  </div>
-  <div class="chart-card"><div class="chart-title">📈 Выручка по дням (₸)</div><canvas id="chart-revenue"></canvas></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="chart-row">
-    <div class="chart-card"><div class="chart-title">💳 Способы оплаты</div><canvas id="chart-pay"></canvas></div>
-    <div class="chart-card"><div class="chart-title">💸 Расходы по категориям</div><canvas id="chart-exp"></canvas></div>
-  </div>
-  <div class="chart-card"><div class="chart-title">📦 Производство vs Продажи (кг)</div><canvas id="chart-stock"></canvas></div>
-  <div class="section-label">Топ клиентов по выручке</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Клиент</th><th>Покупок</th><th>Кг всего</th><th>Выручка</th><th>Долг</th></tr></thead>
-      <tbody id="top-clients-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ REPORT ═══════════ -->
-<div class="page" id="page-report">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Отчёт</h1><p>За любой период</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Excel</button>
-    </div>
-  </div>
-  <div class="report-filters">
-    <div class="form-group" style="margin:0">
-      <label class="form-label">Период от</label>
-      <input type="date" class="form-input" id="rep-from" style="width:auto">
-    </div>
-    <div class="form-group" style="margin:0">
-      <label class="form-label">до</label>
-      <input type="date" class="form-input" id="rep-to" style="width:auto">
-    </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end">
-      <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('today')">Сегодня</button>
-      <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('week')">Неделя</button>
-      <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('month')">Месяц</button>
-      <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('year')">Год</button>
-      <button class="btn btn-primary btn-sm" onclick="buildReport()">Показать</button>
-    </div>
-  </div>
-  <div id="report-body"></div>
-</div>
-
-<!-- ═══════════ PURCHASES ═══════════ -->
-<div class="page" id="page-purchases">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Закупки</h1><p>Закупки продуктов и сырья</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportPurchasesExcel()">📥 Excel</button>
-      <button class="btn btn-primary" onclick="openPurchaseModal()">+ Закупка</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
-    <div class="card"><div class="card-label">Закупок сегодня</div><div class="card-value" id="pur-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">Этот месяц</div><div class="card-value red" id="pur-month">0 ₸</div></div>
-    <div class="card"><div class="card-label">Этот год</div><div class="card-value" id="pur-year">0 ₸</div></div>
-    <div class="card"><div class="card-label">Записей</div><div class="card-value" id="pur-cnt">0</div></div>
-  </div>
-
-  <!-- by category summary -->
-  <div class="section-label">По категориям (месяц)</div>
-  <div id="pur-cat-summary" class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:20px"></div>
-
-  <div class="filters">
-    <input type="date" class="filter-input" id="pf-from" onchange="renderPurchases()">
-    <span style="color:var(--text2);font-size:12px">—</span>
-    <input type="date" class="filter-input" id="pf-to" onchange="renderPurchases()">
-    <select class="filter-input" id="pf-cat" onchange="renderPurchases()">
-      <option value="">Все категории</option>
-      <option>Мука</option><option>Сахар</option><option>Масло</option>
-      <option>Яйца</option><option>Упаковка</option><option>Специи</option>
-      <option>Красители</option><option>Дрожжи</option><option>Другое сырьё</option>
-    </select>
-    <select class="filter-input" id="pf-supplier" onchange="renderPurchases()">
-      <option value="">Все поставщики</option>
-    </select>
-    <button class="btn btn-ghost btn-sm" onclick="clearPurFilters()">Сбросить</button>
-  </div>
-
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">История закупок</div>
-      <div id="pur-summary-text" style="font-size:12px;color:var(--text2)"></div>
-    </div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Категория</th><th>Продукт</th><th>Количество</th><th>Ед.</th><th>Цена/ед</th><th>Итого</th><th>Поставщик</th><th>Заметка</th><th></th></tr></thead>
-      <tbody id="pur-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ SUPPLIERS ═══════════ -->
-<div class="page" id="page-suppliers">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Поставщики</h1><p>База поставщиков</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-primary" onclick="openSupplierModal()">+ Поставщик</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card"><div class="card-label">Всего поставщиков</div><div class="card-value" id="sup-cnt">0</div></div>
-    <div class="card"><div class="card-label">Закупок у них</div><div class="card-value" id="sup-purchases">0 ₸</div></div>
-    <div class="card"><div class="card-label">Самый частый</div><div class="card-value" style="font-size:14px" id="sup-top">—</div></div>
-  </div>
-  <div id="suppliers-list"></div>
-</div>
-
-<!-- RECIPE ITEM MODAL -->
-<div class="overlay" id="recipe-item-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title" id="recipe-modal-title">🧮 Ингредиент</div>
-      <button class="modal-close" onclick="closeOverlay('recipe-item-modal')">✕</button>
-    </div>
-    <input type="hidden" id="ri-edit-id">
-    <div class="form-group"><label class="form-label">Название ингредиента</label>
-      <input type="text" class="form-input" id="ri-name" placeholder="Мука, Сахар, Масло...">
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Граммов на 1 кг товара</label>
-        <input type="number" class="form-input" id="ri-grams" placeholder="0" step="0.1" oninput="calcRiCost()">
-      </div>
-      <div class="form-group"><label class="form-label">Цена за кг (₸) — вручную</label>
-        <input type="number" class="form-input" id="ri-price" placeholder="Авто из закупок" oninput="calcRiCost()">
-      </div>
-    </div>
-    <div class="form-group">
-      <div id="ri-cost-preview" style="font-size:13px;color:var(--accent);font-weight:600;padding:8px;background:var(--accent-light);border-radius:8px;text-align:center"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Заметка</label>
-      <input type="text" class="form-input" id="ri-note" placeholder="Необязательно">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('recipe-item-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveRecipeItem()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- KONUS PAY MODAL -->
-<div class="overlay" id="konus-pay-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">✅ Оплата по конусу</div>
-      <button class="modal-close" onclick="closeOverlay('konus-pay-modal')">✕</button>
-    </div>
-    <input type="hidden" id="kp-id">
-    <div class="form-group" id="kp-client-select-group">
-      <label class="form-label">Выберите конус</label>
-      <select class="form-select" id="kp-konus-select" onchange="fillKonusPayForm()">
-        <option value="">— Выберите клиента/конус —</option>
-      </select>
-    </div>
-    <div class="form-group"><label class="form-label">Клиент</label><input class="form-input" id="kp-client" readonly style="opacity:0.7"></div>
-    <div class="form-group"><label class="form-label">Партия от</label><input class="form-input" id="kp-sale-date" readonly style="opacity:0.7"></div>
-    <div class="form-group"><label class="form-label">Остаток</label><input class="form-input" id="kp-remaining" readonly style="opacity:0.7;color:var(--red);font-weight:700"></div>
-    <div class="form-group"><label class="form-label">Сумма оплаты (₸)</label><input type="number" class="form-input big" id="kp-amount" placeholder="0"></div>
-    <div class="form-group"><label class="form-label">Дата оплаты</label><input type="date" class="form-input" id="kp-date"></div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="kp-note" placeholder="Необязательно"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('konus-pay-modal')">Отмена</button>
-      <button class="btn btn-success" onclick="saveKonusPay()">✓ Оплачено</button>
-    </div>
-  </div>
-</div>
-
-<!-- QUICK ADD CLIENT MODAL -->
-<div class="overlay" id="quick-client-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">👤 Быстрое добавление клиента</div>
-      <button class="modal-close" onclick="closeOverlay('quick-client-modal')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="qc-name" placeholder="Имя клиента"></div>
-    <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-input" id="qc-phone" placeholder="+7 777..."></div>
-    <div class="form-group"><label class="form-label">Тип</label>
-      <select class="form-select" id="qc-type">
-        <option value="fl">ФЛ (физ. лицо)</option>
-        <option value="retail">Розница</option>
-        <option value="wholesale">Оптовик</option>
-        <option value="shop">Магазин</option>
-        <option value="conusniy">Конусный</option>
-      </select>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('quick-client-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveQuickClient()">Добавить и выбрать</button>
-    </div>
-  </div>
-</div>
-
-<!-- PURCHASE MODAL -->
-<div class="overlay" id="purchase-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">🛒 Новая закупка</div>
-      <button class="modal-close" onclick="closeOverlay('purchase-modal')">✕</button>
-    </div>
-    <input type="hidden" id="pur-edit-id">
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Категория</label>
-        <select class="form-select" id="pur-cat-inp">
-          <option>Мука</option><option>Сахар</option><option>Масло</option>
-          <option>Яйца</option><option>Упаковка</option><option>Специи</option>
-          <option>Красители</option><option>Дрожжи</option><option>Другое сырьё</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Продукт</label>
-        <input type="text" class="form-input" id="pur-product" placeholder="Мука пшеничная в/с">
-      </div>
-    </div>
-    <div class="form-row-3">
-      <div class="form-group"><label class="form-label">Количество</label>
-        <input type="number" class="form-input" id="pur-qty" placeholder="0" step="0.001" oninput="calcPurTotal()">
-      </div>
-      <div class="form-group"><label class="form-label">Единица</label>
-        <select class="form-select" id="pur-unit">
-          <option>кг</option><option>г</option><option>л</option><option>шт</option><option>упак</option><option>мешок</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Цена за ед. (₸)</label>
-        <input type="number" class="form-input" id="pur-price" placeholder="0" oninput="calcPurTotal()">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Итого (₸)</label>
-        <input type="number" class="form-input" id="pur-total" placeholder="0" style="background:var(--accent-light);border-color:var(--accent)" readonly>
-      </div>
-      <div class="form-group"><label class="form-label">Дата</label>
-        <input type="date" class="form-input" id="pur-date">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Поставщик</label>
-        <select class="form-select" id="pur-supplier-inp">
-          <option value="">— Без поставщика —</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Оплата</label>
-        <select class="form-select" id="pur-payment">
-          <option value="cash">💵 Наличные</option>
-          <option value="kaspi">🔴 Каспи</option>
-          <option value="kaspipay">📱 Каспи Pay</option>
-          <option value="credit">📋 В кредит</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Заметка</label>
-      <input type="text" class="form-input" id="pur-note" placeholder="Необязательно">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('purchase-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="savePurchase()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- SUPPLIER MODAL -->
-<div class="overlay" id="supplier-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title" id="sup-modal-title">🏭 Поставщик</div>
-      <button class="modal-close" onclick="closeOverlay('supplier-modal')">✕</button>
-    </div>
-    <input type="hidden" id="sup-edit-id">
-    <div class="form-group"><label class="form-label">Название</label>
-      <input type="text" class="form-input" id="sup-name" placeholder="ТОО Мукомол">
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Телефон</label>
-        <input type="text" class="form-input" id="sup-phone" placeholder="+7 777...">
-      </div>
-      <div class="form-group"><label class="form-label">Что поставляет</label>
-        <input type="text" class="form-input" id="sup-products" placeholder="Мука, Сахар">
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Адрес</label>
-      <input type="text" class="form-input" id="sup-address" placeholder="Адрес">
-    </div>
-    <div class="form-group"><label class="form-label">Заметка</label>
-      <input type="text" class="form-input" id="sup-note" placeholder="">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('supplier-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveSupplier()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ INVENTORY ═══════════ -->
-<div class="page" id="page-inventory">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Ревизия склада</h1><p>Остатки по всем товарам</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-primary" onclick="openInvItemModal()">+ Товар</button>
-      <button class="btn btn-ghost btn-sm" onclick="openInvEntryModal()">+ Приход/Расход</button>
-    </div>
-  </div>
-
-  <div class="cards" id="inv-summary-cards"></div>
-
-  <div class="section-label">Товары на складе</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Товар</th><th>Единица</th><th>Приход</th><th>Расход</th><th>Обмен</th><th>Бонус</th><th>Остаток</th><th>Статус</th><th></th></tr></thead>
-      <tbody id="inv-tb"></tbody>
-    </table></div>
-  </div>
-
-  <div class="section-label" style="margin-top:24px">История движений</div>
-  <div class="filters">
-    <select class="filter-input" id="inv-filter-item" onchange="renderInvHistory()">
-      <option value="">Все товары</option>
-    </select>
-    <select class="filter-input" id="inv-filter-type" onchange="renderInvHistory()">
-      <option value="">Все операции</option>
-      <option value="in">Приход</option>
-      <option value="out">Расход</option>
-      <option value="exchange">Обмен</option>
-      <option value="bonus">Бонус</option>
-      <option value="production">Производство</option>
-    </select>
-    <input type="date" class="filter-input" id="inv-filter-date" onchange="renderInvHistory()">
-    <button class="btn btn-ghost btn-sm" onclick="clearInvFilters()">Сбросить</button>
-  </div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Дата</th><th>Товар</th><th>Операция</th><th>Количество</th><th>Клиент</th><th>Заметка</th><th></th></tr></thead>
-      <tbody id="inv-hist-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- INV ITEM MODAL -->
-<div class="overlay" id="inv-item-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">📦 Товар на складе</div>
-      <button class="modal-close" onclick="closeOverlay('inv-item-modal')">✕</button>
-    </div>
-    <input type="hidden" id="inv-item-edit-id">
-    <div class="form-group"><label class="form-label">Название товара</label><input type="text" class="form-input" id="inv-item-name" placeholder="Мука, Сахар, Пряники..."></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Единица</label>
-        <select class="form-select" id="inv-item-unit">
-          <option>кг</option><option>г</option><option>шт</option><option>л</option><option>упак</option>
-        </select>
-      </div>
-      <div class="form-group"><label class="form-label">Мин. остаток (⚠️)</label><input type="number" class="form-input" id="inv-item-min" placeholder="0"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('inv-item-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveInvItem()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- INV ENTRY MODAL -->
-<div class="overlay" id="inv-entry-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title" id="inv-entry-title">📥 Движение товара</div>
-      <button class="modal-close" onclick="closeOverlay('inv-entry-modal')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">Товар</label>
-      <select class="form-select" id="inv-entry-item"></select>
-    </div>
-    <div class="form-group"><label class="form-label">Операция</label>
-      <select class="form-select" id="inv-entry-type" onchange="updateInvEntryTitle()">
-        <option value="in">📥 Приход (купили/получили)</option>
-        <option value="out">📤 Расход (использовали)</option>
-        <option value="exchange">🔄 Обмен (испорченный)</option>
-        <option value="bonus">🎁 Бонус клиенту</option>
-        <option value="production">🏭 Произвели из сырья</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Количество</label><input type="number" class="form-input" id="inv-entry-qty" placeholder="0" step="0.001"></div>
-      <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="inv-entry-date"></div>
-    </div>
-    <div class="form-group" id="inv-entry-client-group">
-      <label class="form-label">Клиент (для обмена/бонуса)</label>
-      <select class="form-select" id="inv-entry-client"><option value="">— Без клиента —</option></select>
-    </div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="inv-entry-note" placeholder="Необязательно"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('inv-entry-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveInvEntry()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ SETTINGS ═══════════ -->
-<div class="page" id="page-settings">
-  <div class="page-header">
-    <div class="page-header-left"><h1>Настройки</h1><p>Параметры системы</p></div>
-  </div>
-  <div class="table-card" style="padding:24px;max-width:480px">
-    <div class="section-label">Бизнес</div>
-    <div class="form-group"><label class="form-label">Название бизнеса</label><input type="text" class="form-input" id="set-name" placeholder="ПряникПро"></div>
-    <div class="form-group"><label class="form-label">Название товара</label><input type="text" class="form-input" id="set-product" placeholder="Пряники"></div>
-    <div class="form-group"><label class="form-label">Единица (кг / шт / упак)</label><input type="text" class="form-input" id="set-unit" placeholder="кг"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Цена по умолчанию (₸)</label><input type="number" class="form-input" id="set-price" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">Себестоимость (₸)</label><input type="number" class="form-input" id="set-cost" placeholder="0"></div>
-    </div>
-    <div class="section-label">Безопасность</div>
-    <div class="form-group"><label class="form-label">Пароль для входа</label><input type="password" class="form-input" id="set-password" placeholder="Текущий пароль: 1234"><div class="form-hint">По умолчанию: 1234</div></div>
-    <div class="section-label">Склад</div>
-    <div class="form-group"><label class="form-label">⚠️ Порог предупреждения склада (кг)</label><input type="number" class="form-input" id="set-stock_warning" placeholder="50"><div class="form-hint">Красное предупреждение когда меньше этого количества</div></div>
-    <div class="section-label">Категории расходов</div>
-    <div id="exp-categories-list" style="margin-bottom:12px"></div>
-    <div style="display:flex;gap:8px;margin-bottom:20px">
-      <input type="text" class="form-input" id="new-exp-cat" placeholder="Новая категория..." style="flex:1">
-      <button class="btn btn-primary btn-sm" onclick="addExpCategory(document.getElementById('new-exp-cat').value);document.getElementById('new-exp-cat').value=''">+ Добавить</button>
-    </div>
-    <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
-  </div>
-</div>
-
-<!-- ═══════════ RECIPE / СЕБЕСТОИМОСТЬ ═══════════ -->
-<div class="page" id="page-recipe">
-  <div class="page-header">
-    <div class="page-header-left"><h1>🧮 Себестоимость</h1><p>Расчёт стоимости 1 кг товара</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-primary" onclick="openRecipeItemModal()">+ Ингредиент</button>
-    </div>
-  </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
-    <div class="card" style="border-color:var(--accent)">
-      <div class="card-icon" style="background:var(--accent-light)">💰</div>
-      <div class="card-label">Себестоимость 1 кг</div>
-      <div class="card-value" style="color:var(--accent);font-size:28px" id="recipe-cost-total">0 ₸</div>
-      <div class="card-sub" id="recipe-cost-sub"></div>
-    </div>
-    <div class="card">
-      <div class="card-icon" style="background:var(--green-light)">📈</div>
-      <div class="card-label">Цена продажи (из настроек)</div>
-      <div class="card-value" style="color:var(--green)" id="recipe-price">0 ₸</div>
-    </div>
-    <div class="card">
-      <div class="card-icon" style="background:var(--yellow-light)">💹</div>
-      <div class="card-label">Наценка</div>
-      <div class="card-value" id="recipe-margin">0%</div>
-    </div>
-  </div>
-  <div id="recipe-warning" style="display:none;background:var(--yellow-light);border:1px solid var(--yellow);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e">
+    <span style="font-size:13px;opacity:0.8;font-weight:400">нажми и внеси за 5 секунд</span> </button> <div class="cards" id="dash-cards"> <div class="card"><div class="card-icon" style="background:#e0f2fe">💰</div><div class="card-label">Выручка сегодня</div><div class="card-value green" id="dc-today">0 ₸</div><div class="card-sub" id="dc-today-count"></div></div> <div class="card"><div class="card-icon" style="background:#d1fae5">📅</div><div class="card-label">Выручка за месяц</div><div class="card-value" id="dc-month">0 ₸</div><div class="card-sub" id="dc-month-name"></div></div> <div class="card" onclick="goPage('debts')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">📋</div><div class="card-label">Долги клиентов</div><div class="card-value" style="color:var(--yellow)" id="dc-debts">0 ₸</div><div class="card-sub" id="dc-debts-count"></div></div> <div class="card" onclick="goPage('konus')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">🔺</div><div class="card-label">Конусы (активных)</div><div class="card-value" style="color:var(--yellow)" id="dc-konus">0 ₸</div><div class="card-sub" id="dc-konus-count"></div></div> <div class="card"><div class="card-icon" style="background:#ede9fe">📦</div><div class="card-label">Остаток склада</div><div class="card-value" id="dc-stock">0 кг</div><div class="card-sub">пряников</div></div> <div class="card"><div class="card-icon" style="background:#fee2e2">💸</div><div class="card-label">Расходы месяц</div><div class="card-value" style="color:var(--red)" id="dc-exp">0 ₸</div></div> <div class="card"><div class="card-icon" style="background:#d1fae5">📈</div><div class="card-label">Прибыль месяц</div><div class="card-value" id="dc-profit">0 ₸</div></div> </div> <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px" class="chart-row"> <div class="card"><div class="card-icon" style="background:#e0f2fe;font-size:20px">💵</div><div class="card-label">Наличные сегодня</div><div class="card-value" id="dc-cash">0 ₸</div></div> <div class="card"><div class="card-icon" style="background:#fee2e2;font-size:20px">🔴</div><div class="card-label">Каспи сегодня</div><div class="card-value" id="dc-kaspi">0 ₸</div></div> <div class="card"><div class="card-icon" style="background:#ede9fe;font-size:20px">📱</div><div class="card-label">Каспи Pay / QR</div><div class="card-value" id="dc-kaspipay">0 ₸</div></div> <div class="card"><div class="card-icon" style="background:#fef3c7;font-size:20px">🔺</div><div class="card-label">Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="dc-konus-today">0 ₸</div></div> </div> <div class="section-label">Последние продажи сегодня</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Время</th><th>Клиент</th><th>Кг</th><th>Сумма</th><th>Оплата</th><th></th></tr></thead> <tbody id="dash-sales-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-sales"> <div class="page-header"> <div class="page-header-left"><h1>Продажи</h1><p>История всех продаж</p></div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="exportSalesExcel()">📥 Excel</button> <button class="btn btn-primary" onclick="openQuickSale()">⚡ Новая продажа</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"> <div class="card"><div class="card-label">Выручка сегодня</div><div class="card-value green" id="s-today">0 ₸</div></div> <div class="card"><div class="card-label">Этот месяц</div><div class="card-value" id="s-month">0 ₸</div></div> <div class="card"><div class="card-label">Продаж сегодня</div><div class="card-value" id="s-cnt">0</div></div> <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div> <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div> <div class="card"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div> <div class="card"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div> </div> <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="s-pay-summary"></div> <div class="filters"> <input type="date" class="filter-input" id="sf-date" onchange="renderSalesTable()"> <input type="text" class="filter-input" placeholder="🔍 Поиск клиента" id="sf-search" oninput="renderSalesTable()" style="width:200px"> <select class="filter-input" id="sf-pay" onchange="renderSalesTable()"> <option value="">Все оплаты</option> <option value="cash">💵 Наличные</option> <option value="kaspi">🔴 Каспи</option> <option value="kaspipay">📱 Каспи Pay</option> <option value="debt">📋 В долг</option> <option value="konus">🔺 Конус</option> </select> <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-date').value='';document.getElementById('sf-search').value='';document.getElementById('sf-pay').value='';renderSalesTable()">Сбросить</button> </div> <div class="table-card"> <div class="table-header"> <div class="table-title">История продаж</div> <div id="sf-summary-text" style="font-size:12px;color:var(--text2)"></div> </div> <div class="table-wrap"><table> <thead><tr><th>Дата / Время</th><th>Клиент</th><th>Товар (кг)</th><th>Цена/кг</th><th>Скидка</th><th>Итого</th><th>Оплата</th><th>Себест.</th><th>Прибыль</th><th></th></tr></thead> <tbody id="sales-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-clients"> <div class="page-header"> <div class="page-header-left"><h1>Клиенты</h1><p>База клиентов и статистика</p></div> <div class="page-header-actions"> <button class="btn btn-primary" onclick="openClientModal()">+ Добавить клиента</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(3,1fr)"> <div class="card"><div class="card-label">Всего клиентов</div><div class="card-value" id="cl-total">0</div></div> <div class="card"><div class="card-label">С долгом</div><div class="card-value" style="color:var(--red)" id="cl-debt-cnt">0</div></div> <div class="card"><div class="card-label">С обменом</div><div class="card-value" style="color:var(--yellow)" id="cl-exch-cnt">0</div></div> </div> <div class="filters"> <input type="text" class="filter-input" placeholder="🔍 Поиск по имени, магазину, телефону" id="cl-search" oninput="renderClients()" style="width:300px"> <select class="filter-input" id="cl-type-filter" onchange="renderClients()"> <option value="">Все типы</option> <option value="retail">Розница</option> <option value="wholesale">Оптовик</option> <option value="shop">Магазин</option> <option value="conusniy">Конусный</option> </select> </div> <div id="clients-list"></div>
+</div> <div class="page" id="page-debts"> <div class="page-header"> <div class="page-header-left"><h1>Долги</h1><p>Кто и сколько должен</p></div> <div class="page-header-actions"> <button class="btn btn-warning" onclick="openDebtModal()">+ Добавить долг</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(3,1fr)"> <div class="card"><div class="card-label">Общий долг</div><div class="card-value" style="color:var(--red)" id="dbt-total">0 ₸</div></div> <div class="card"><div class="card-label">Должников</div><div class="card-value" id="dbt-cnt">0</div></div> <div class="card"><div class="card-label">Погашено (месяц)</div><div class="card-value" style="color:var(--green)" id="dbt-paid">0 ₸</div></div> </div> <div class="section-label">Активные долги</div> <div id="debts-list"></div> <div class="section-label" style="margin-top:24px">История погашений</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Дата</th><th>Клиент</th><th>Товар взят</th><th>Сумма долга</th><th>Оплачено</th><th>Как вернул</th><th>Заметка</th><th></th></tr></thead> <tbody id="debt-hist-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-konus"> <div class="page-header"> <div class="page-header-left"><h1>🔺 Конусы</h1><p>Клиенты платят за прошлую партию</p></div> <div class="page-header-actions"> <button class="btn btn-warning" onclick="openKonusPayModal()">+ Оплата по конусу</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(3,1fr)"> <div class="card"><div class="card-label">Активных конусов</div><div class="card-value" style="color:var(--yellow)" id="kon-cnt">0</div></div> <div class="card"><div class="card-label">Общая сумма</div><div class="card-value" style="color:var(--red)" id="kon-sum">0 ₸</div></div> <div class="card"><div class="card-label">Оплачено (месяц)</div><div class="card-value" style="color:var(--green)" id="kon-paid">0 ₸</div></div> </div> <div class="section-label">Активные конусы</div> <div id="konus-list"></div> <div class="section-label" style="margin-top:24px">История оплат по конусам</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Дата оплаты</th><th>Клиент</th><th>Оплатил за партию</th><th>Сумма оплаты</th><th>Остаток</th><th>Заметка</th></tr></thead> <tbody id="konus-hist-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-exchanges"> <div class="page-header"> <div class="page-header-left"><h1>Обмены</h1><p>Испорченный товар к замене</p></div> <div class="page-header-actions"> <button class="btn btn-warning" onclick="openExchangeModal()">+ Обмен</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"> <div class="card"><div class="card-label">Активных обменов</div><div class="card-value" style="color:var(--yellow)" id="exch-cnt">0</div></div> <div class="card"><div class="card-label">Сумма к возврату</div><div class="card-value" style="color:var(--red)" id="exch-sum">0 ₸</div></div> <div class="card"><div class="card-label">🔺 Кг к обмену</div><div class="card-value" id="exch-kg">0</div></div> <div class="card"><div class="card-label">Всего обменов</div><div class="card-value" id="exch-total-cnt">0</div></div> <div class="card"><div class="card-label">Всего кг обменяно</div><div class="card-value" style="color:var(--red)" id="exch-total-kg">0</div></div> <div class="card"><div class="card-label">Потери ₸</div><div class="card-value" style="color:var(--red)" id="exch-total-sum">0 ₸</div></div> </div> <div id="exchanges-list"></div>
+</div> <div class="page" id="page-expenses"> <div class="page-header"> <div class="page-header-left"><h1>Расходы</h1><p>Все затраты бизнеса</p></div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="exportExpensesExcel()">📥 Excel</button> <button class="btn btn-danger" onclick="openExpenseModal()">+ Расход</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(4,1fr)"> <div class="card"><div class="card-label">Сегодня</div><div class="card-value" style="color:var(--red)" id="e-today">0 ₸</div></div> <div class="card"><div class="card-label">Этот месяц</div><div class="card-value" style="color:var(--red)" id="e-month">0 ₸</div></div> <div class="card"><div class="card-label">Этот год</div><div class="card-value" id="e-year">0 ₸</div></div> <div class="card"><div class="card-label">Записей</div><div class="card-value" id="e-cnt">0</div></div> </div> <div class="filters"> <input type="date" class="filter-input" id="ef-from" onchange="renderExpenses()"> <span style="color:var(--text2);font-size:12px">—</span> <input type="date" class="filter-input" id="ef-to" onchange="renderExpenses()"> <select class="filter-input" id="ef-cat" onchange="renderExpenses()"> <option value="">Все категории</option> </select> <button class="btn btn-ghost btn-sm" onclick="clearExpFilters()">Сбросить</button> </div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Дата</th><th>Категория</th><th>Сотрудник</th><th>Сумма</th><th>Описание</th><th></th></tr></thead> <tbody id="exp-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-warehouse"> <div class="page-header"> <div class="page-header-left"><h1>Склад</h1><p>Производство и остатки</p></div> <div class="page-header-actions"> <button class="btn btn-success" onclick="openProduceModal()">+ Производство</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(4,1fr)"> <div class="card"><div class="card-label">Остаток</div><div class="card-value" style="color:var(--accent)" id="wh-stock">0 кг</div></div> <div class="card"><div class="card-label">Произведено всего</div><div class="card-value" id="wh-prod">0 кг</div></div> <div class="card"><div class="card-label">Продано всего</div><div class="card-value" id="wh-sold">0 кг</div></div> <div class="card"><div class="card-label">Себест./кг</div><div class="card-value" id="wh-cost">0 ₸</div></div> </div> <div class="section-label">История производства</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Дата</th><th>Кг</th><th>Себест./кг</th><th>Итого затрат</th><th>Заметка</th><th></th></tr></thead> <tbody id="wh-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-analytics"> <div class="page-header"> <div class="page-header-left"><h1>Аналитика</h1><p>Графики и отчёты</p></div> <div class="page-header-actions"> <select class="filter-input" id="an-range" onchange="renderAnalytics()"> <option value="7">7 дней</option> <option value="30" selected>30 дней</option> <option value="90">3 месяца</option> </select> <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Отчёт Excel</button> </div> </div> <div class="chart-card"><div class="chart-title">📈 Выручка по дням (₸)</div><canvas id="chart-revenue"></canvas></div> <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="chart-row"> <div class="chart-card"><div class="chart-title">💳 Способы оплаты</div><canvas id="chart-pay"></canvas></div> <div class="chart-card"><div class="chart-title">💸 Расходы по категориям</div><canvas id="chart-exp"></canvas></div> </div> <div class="chart-card"><div class="chart-title">📦 Производство vs Продажи (кг)</div><canvas id="chart-stock"></canvas></div> <div class="section-label">Топ клиентов по выручке</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>#</th><th>Клиент</th><th>Покупок</th><th>Кг всего</th><th>Выручка</th><th>Долг</th></tr></thead> <tbody id="top-clients-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-report"> <div class="page-header"> <div class="page-header-left"><h1>Отчёт</h1><p>За любой период</p></div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="exportReportExcel()">📥 Excel</button> </div> </div> <div class="report-filters"> <div class="form-group" style="margin:0"> <label class="form-label">Период от</label> <input type="date" class="form-input" id="rep-from" style="width:auto"> </div> <div class="form-group" style="margin:0"> <label class="form-label">до</label> <input type="date" class="form-input" id="rep-to" style="width:auto"> </div> <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end"> <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('today')">Сегодня</button> <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('week')">Неделя</button> <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('month')">Месяц</button> <button class="btn btn-ghost btn-sm" onclick="setReportPeriod('year')">Год</button> <button class="btn btn-primary btn-sm" onclick="buildReport()">Показать</button> </div> </div> <div id="report-body"></div>
+</div> <div class="page" id="page-purchases"> <div class="page-header"> <div class="page-header-left"><h1>Закупки</h1><p>Закупки продуктов и сырья</p></div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="exportPurchasesExcel()">📥 Excel</button> <button class="btn btn-primary" onclick="openPurchaseModal()">+ Закупка</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))"> <div class="card"><div class="card-label">Закупок сегодня</div><div class="card-value" id="pur-today">0 ₸</div></div> <div class="card"><div class="card-label">Этот месяц</div><div class="card-value red" id="pur-month">0 ₸</div></div> <div class="card"><div class="card-label">Этот год</div><div class="card-value" id="pur-year">0 ₸</div></div> <div class="card"><div class="card-label">Записей</div><div class="card-value" id="pur-cnt">0</div></div> </div> <div class="section-label">По категориям (месяц)</div> <div id="pur-cat-summary" class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:20px"></div> <div class="filters"> <input type="date" class="filter-input" id="pf-from" onchange="renderPurchases()"> <span style="color:var(--text2);font-size:12px">—</span> <input type="date" class="filter-input" id="pf-to" onchange="renderPurchases()"> <select class="filter-input" id="pf-cat" onchange="renderPurchases()"> <option value="">Все категории</option> <option>Мука</option><option>Сахар</option><option>Масло</option> <option>Яйца</option><option>Упаковка</option><option>Специи</option> <option>Красители</option><option>Дрожжи</option><option>Другое сырьё</option> </select> <select class="filter-input" id="pf-supplier" onchange="renderPurchases()"> <option value="">Все поставщики</option> </select> <button class="btn btn-ghost btn-sm" onclick="clearPurFilters()">Сбросить</button> </div> <div class="table-card"> <div class="table-header"> <div class="table-title">История закупок</div> <div id="pur-summary-text" style="font-size:12px;color:var(--text2)"></div> </div> <div class="table-wrap"><table> <thead><tr><th>Дата</th><th>Категория</th><th>Продукт</th><th>Количество</th><th>Ед.</th><th>Цена/ед</th><th>Итого</th><th>Поставщик</th><th>Заметка</th><th></th></tr></thead> <tbody id="pur-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-suppliers"> <div class="page-header"> <div class="page-header-left"><h1>Поставщики</h1><p>База поставщиков</p></div> <div class="page-header-actions"> <button class="btn btn-primary" onclick="openSupplierModal()">+ Поставщик</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(3,1fr)"> <div class="card"><div class="card-label">Всего поставщиков</div><div class="card-value" id="sup-cnt">0</div></div> <div class="card"><div class="card-label">Закупок у них</div><div class="card-value" id="sup-purchases">0 ₸</div></div> <div class="card"><div class="card-label">Самый частый</div><div class="card-value" style="font-size:14px" id="sup-top">—</div></div> </div> <div id="suppliers-list"></div>
+</div> <div class="overlay" id="recipe-item-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title" id="recipe-modal-title">🧮 Ингредиент</div> <button class="modal-close" onclick="closeOverlay('recipe-item-modal')">✕</button> </div> <input type="hidden" id="ri-edit-id"> <div class="form-group"><label class="form-label">Название ингредиента</label> <input type="text" class="form-input" id="ri-name" placeholder="Мука, Сахар, Масло..."> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Граммов на 1 кг товара</label> <input type="number" class="form-input" id="ri-grams" placeholder="0" step="0.1" oninput="calcRiCost()"> </div> <div class="form-group"><label class="form-label">Цена за кг (₸) — вручную</label> <input type="number" class="form-input" id="ri-price" placeholder="Авто из закупок" oninput="calcRiCost()"> </div> </div> <div class="form-group"> <div id="ri-cost-preview" style="font-size:13px;color:var(--accent);font-weight:600;padding:8px;background:var(--accent-light);border-radius:8px;text-align:center"></div> </div> <div class="form-group"><label class="form-label">Заметка</label> <input type="text" class="form-input" id="ri-note" placeholder="Необязательно"> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('recipe-item-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveRecipeItem()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="konus-pay-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">✅ Оплата по конусу</div> <button class="modal-close" onclick="closeOverlay('konus-pay-modal')">✕</button> </div> <input type="hidden" id="kp-id"> <div class="form-group" id="kp-client-select-group"> <label class="form-label">Выберите конус</label> <select class="form-select" id="kp-konus-select" onchange="fillKonusPayForm()"> <option value="">— Выберите клиента/конус —</option> </select> </div> <div class="form-group"><label class="form-label">Клиент</label><input class="form-input" id="kp-client" readonly style="opacity:0.7"></div> <div class="form-group"><label class="form-label">Партия от</label><input class="form-input" id="kp-sale-date" readonly style="opacity:0.7"></div> <div class="form-group"><label class="form-label">Остаток</label><input class="form-input" id="kp-remaining" readonly style="opacity:0.7;color:var(--red);font-weight:700"></div> <div class="form-group"><label class="form-label">Сумма оплаты (₸)</label><input type="number" class="form-input big" id="kp-amount" placeholder="0"></div> <div class="form-group"><label class="form-label">Дата оплаты</label><input type="date" class="form-input" id="kp-date"></div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="kp-note" placeholder="Необязательно"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('konus-pay-modal')">Отмена</button> <button class="btn btn-success" onclick="saveKonusPay()">✓ Оплачено</button> </div> </div>
+</div> <div class="overlay" id="quick-client-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">👤 Быстрое добавление клиента</div> <button class="modal-close" onclick="closeOverlay('quick-client-modal')">✕</button> </div> <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="qc-name" placeholder="Имя клиента"></div> <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-input" id="qc-phone" placeholder="+7 777..."></div> <div class="form-group"><label class="form-label">Тип</label> <select class="form-select" id="qc-type"> <option value="fl">ФЛ (физ. лицо)</option> <option value="retail">Розница</option> <option value="wholesale">Оптовик</option> <option value="shop">Магазин</option> <option value="conusniy">Конусный</option> </select> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('quick-client-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveQuickClient()">Добавить и выбрать</button> </div> </div>
+</div> <div class="overlay" id="purchase-modal"> <div class="modal"> <div class="modal-header"> <div class="modal-title">🛒 Новая закупка</div> <button class="modal-close" onclick="closeOverlay('purchase-modal')">✕</button> </div> <input type="hidden" id="pur-edit-id"> <div class="form-row"> <div class="form-group"><label class="form-label">Категория</label> <select class="form-select" id="pur-cat-inp"> <option>Мука</option><option>Сахар</option><option>Масло</option> <option>Яйца</option><option>Упаковка</option><option>Специи</option> <option>Красители</option><option>Дрожжи</option><option>Другое сырьё</option> </select> </div> <div class="form-group"><label class="form-label">Продукт</label> <input type="text" class="form-input" id="pur-product" placeholder="Мука пшеничная в/с"> </div> </div> <div class="form-row-3"> <div class="form-group"><label class="form-label">Количество</label> <input type="number" class="form-input" id="pur-qty" placeholder="0" step="0.001" oninput="calcPurTotal()"> </div> <div class="form-group"><label class="form-label">Единица</label> <select class="form-select" id="pur-unit"> <option>кг</option><option>г</option><option>л</option><option>шт</option><option>упак</option><option>мешок</option> </select> </div> <div class="form-group"><label class="form-label">Цена за ед. (₸)</label> <input type="number" class="form-input" id="pur-price" placeholder="0" oninput="calcPurTotal()"> </div> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Итого (₸)</label> <input type="number" class="form-input" id="pur-total" placeholder="0" style="background:var(--accent-light);border-color:var(--accent)" readonly> </div> <div class="form-group"><label class="form-label">Дата</label> <input type="date" class="form-input" id="pur-date"> </div> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Поставщик</label> <select class="form-select" id="pur-supplier-inp"> <option value="">— Без поставщика —</option> </select> </div> <div class="form-group"><label class="form-label">Оплата</label> <select class="form-select" id="pur-payment"> <option value="cash">💵 Наличные</option> <option value="kaspi">🔴 Каспи</option> <option value="kaspipay">📱 Каспи Pay</option> <option value="credit">📋 В кредит</option> </select> </div> </div> <div class="form-group"><label class="form-label">Заметка</label> <input type="text" class="form-input" id="pur-note" placeholder="Необязательно"> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('purchase-modal')">Отмена</button> <button class="btn btn-primary" onclick="savePurchase()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="supplier-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title" id="sup-modal-title">🏭 Поставщик</div> <button class="modal-close" onclick="closeOverlay('supplier-modal')">✕</button> </div> <input type="hidden" id="sup-edit-id"> <div class="form-group"><label class="form-label">Название</label> <input type="text" class="form-input" id="sup-name" placeholder="ТОО Мукомол"> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Телефон</label> <input type="text" class="form-input" id="sup-phone" placeholder="+7 777..."> </div> <div class="form-group"><label class="form-label">Что поставляет</label> <input type="text" class="form-input" id="sup-products" placeholder="Мука, Сахар"> </div> </div> <div class="form-group"><label class="form-label">Адрес</label> <input type="text" class="form-input" id="sup-address" placeholder="Адрес"> </div> <div class="form-group"><label class="form-label">Заметка</label> <input type="text" class="form-input" id="sup-note" placeholder=""> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('supplier-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveSupplier()">Сохранить</button> </div> </div>
+</div> <div class="page" id="page-inventory"> <div class="page-header"> <div class="page-header-left"><h1>Ревизия склада</h1><p>Остатки по всем товарам</p></div> <div class="page-header-actions"> <button class="btn btn-primary" onclick="openInvItemModal()">+ Товар</button> <button class="btn btn-ghost btn-sm" onclick="openInvEntryModal()">+ Приход/Расход</button> </div> </div> <div class="cards" id="inv-summary-cards"></div> <div class="section-label">Товары на складе</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Товар</th><th>Единица</th><th>Приход</th><th>Расход</th><th>Обмен</th><th>Бонус</th><th>Остаток</th><th>Статус</th><th></th></tr></thead> <tbody id="inv-tb"></tbody> </table></div> </div> <div class="section-label" style="margin-top:24px">История движений</div> <div class="filters"> <select class="filter-input" id="inv-filter-item" onchange="renderInvHistory()"> <option value="">Все товары</option> </select> <select class="filter-input" id="inv-filter-type" onchange="renderInvHistory()"> <option value="">Все операции</option> <option value="in">Приход</option> <option value="out">Расход</option> <option value="exchange">Обмен</option> <option value="bonus">Бонус</option> <option value="production">Производство</option> </select> <input type="date" class="filter-input" id="inv-filter-date" onchange="renderInvHistory()"> <button class="btn btn-ghost btn-sm" onclick="clearInvFilters()">Сбросить</button> </div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Дата</th><th>Товар</th><th>Операция</th><th>Количество</th><th>Клиент</th><th>Заметка</th><th></th></tr></thead> <tbody id="inv-hist-tb"></tbody> </table></div> </div>
+</div> <div class="overlay" id="inv-item-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">📦 Товар на складе</div> <button class="modal-close" onclick="closeOverlay('inv-item-modal')">✕</button> </div> <input type="hidden" id="inv-item-edit-id"> <div class="form-group"><label class="form-label">Название товара</label><input type="text" class="form-input" id="inv-item-name" placeholder="Мука, Сахар, Пряники..."></div> <div class="form-row"> <div class="form-group"><label class="form-label">Единица</label> <select class="form-select" id="inv-item-unit"> <option>кг</option><option>г</option><option>шт</option><option>л</option><option>упак</option> </select> </div> <div class="form-group"><label class="form-label">Мин. остаток (⚠️)</label><input type="number" class="form-input" id="inv-item-min" placeholder="0"></div> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('inv-item-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveInvItem()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="inv-entry-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title" id="inv-entry-title">📥 Движение товара</div> <button class="modal-close" onclick="closeOverlay('inv-entry-modal')">✕</button> </div> <div class="form-group"><label class="form-label">Товар</label> <select class="form-select" id="inv-entry-item"></select> </div> <div class="form-group"><label class="form-label">Операция</label> <select class="form-select" id="inv-entry-type" onchange="updateInvEntryTitle()"> <option value="in">📥 Приход (купили/получили)</option> <option value="out">📤 Расход (использовали)</option> <option value="exchange">🔄 Обмен (испорченный)</option> <option value="bonus">🎁 Бонус клиенту</option> <option value="production">🏭 Произвели из сырья</option> </select> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Количество</label><input type="number" class="form-input" id="inv-entry-qty" placeholder="0" step="0.001"></div> <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="inv-entry-date"></div> </div> <div class="form-group" id="inv-entry-client-group"> <label class="form-label">Клиент (для обмена/бонуса)</label> <select class="form-select" id="inv-entry-client"><option value="">— Без клиента —</option></select> </div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="inv-entry-note" placeholder="Необязательно"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('inv-entry-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveInvEntry()">Сохранить</button> </div> </div>
+</div> <div class="page" id="page-settings"> <div class="page-header"> <div class="page-header-left"><h1>Настройки</h1><p>Параметры системы</p></div> </div> <div class="table-card" style="padding:24px;max-width:480px"> <div class="section-label">Бизнес</div> <div class="form-group"><label class="form-label">Название бизнеса</label><input type="text" class="form-input" id="set-name" placeholder="ПряникПро"></div> <div class="form-group"><label class="form-label">Название товара</label><input type="text" class="form-input" id="set-product" placeholder="Пряники"></div> <div class="form-group"><label class="form-label">Единица (кг / шт / упак)</label><input type="text" class="form-input" id="set-unit" placeholder="кг"></div> <div class="form-row"> <div class="form-group"><label class="form-label">Цена по умолчанию (₸)</label><input type="number" class="form-input" id="set-price" placeholder="0"></div> <div class="form-group"><label class="form-label">Себестоимость (₸)</label><input type="number" class="form-input" id="set-cost" placeholder="0"></div> </div> <div class="section-label">Безопасность</div> <div class="form-group"><label class="form-label">Пароль для входа</label><input type="password" class="form-input" id="set-password" placeholder="Текущий пароль: 1234"><div class="form-hint">По умолчанию: 1234</div></div> <div class="section-label">Склад</div> <div class="form-group"><label class="form-label">⚠️ Порог предупреждения склада (кг)</label><input type="number" class="form-input" id="set-stock_warning" placeholder="50"><div class="form-hint">Красное предупреждение когда меньше этого количества</div></div> <div class="section-label">Категории расходов</div> <div id="exp-categories-list" style="margin-bottom:12px"></div> <div style="display:flex;gap:8px;margin-bottom:20px"> <input type="text" class="form-input" id="new-exp-cat" placeholder="Новая категория..." style="flex:1"> <button class="btn btn-primary btn-sm" onclick="addExpCategory(document.getElementById('new-exp-cat').value);document.getElementById('new-exp-cat').value=''">+ Добавить</button> </div> <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button> </div>
+</div> <div class="page" id="page-recipe"> <div class="page-header"> <div class="page-header-left"><h1>🧮 Себестоимость</h1><p>Расчёт стоимости 1 кг товара</p></div> <div class="page-header-actions"> <button class="btn btn-primary" onclick="openRecipeItemModal()">+ Ингредиент</button> </div> </div> <div class="cards" style="grid-template-columns:repeat(3,1fr)"> <div class="card" style="border-color:var(--accent)"> <div class="card-icon" style="background:var(--accent-light)">💰</div> <div class="card-label">Себестоимость 1 кг</div> <div class="card-value" style="color:var(--accent);font-size:28px" id="recipe-cost-total">0 ₸</div> <div class="card-sub" id="recipe-cost-sub"></div> </div> <div class="card"> <div class="card-icon" style="background:var(--green-light)">📈</div> <div class="card-label">Цена продажи (из настроек)</div> <div class="card-value" style="color:var(--green)" id="recipe-price">0 ₸</div> </div> <div class="card"> <div class="card-icon" style="background:var(--yellow-light)">💹</div> <div class="card-label">Наценка</div> <div class="card-value" id="recipe-margin">0%</div> </div> </div> <div id="recipe-warning" style="display:none;background:var(--yellow-light);border:1px solid var(--yellow);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#92400e">
     ⚠️ Некоторые ингредиенты не имеют актуальной цены из закупок. Укажите цену вручную.
-  </div>
-  <div class="section-label">Ингредиенты на 1 кг товара</div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Ингредиент</th><th>Граммов на 1 кг</th><th>Последняя цена (₸/кг)</th><th>Источник цены</th><th>Стоимость на 1 кг</th><th></th></tr></thead>
-      <tbody id="recipe-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-<!-- ═══════════ РЕНТАБЕЛЬНОСТЬ ═══════════ -->
-<div class="page" id="page-rentab">
-  <div class="page-header">
-    <div class="page-header-left"><h1>💹 Рентабельность</h1><p>Полная финансовая картина бизнеса</p></div>
-    <div class="page-header-actions">
-      <select class="filter-input" id="ren-period" onchange="renderRentab()">
-        <option value="month">Этот месяц</option>
-        <option value="quarter">Квартал</option>
-        <option value="year">Этот год</option>
-        <option value="all">Всё время</option>
-      </select>
-      <button class="btn btn-ghost btn-sm" onclick="exportRentabExcel()">📥 Excel</button>
-    </div>
-  </div>
-  <div id="rentab-body"></div>
-</div>
-
-<!-- ═══════════ ИСТОРИЯ ═══════════ -->
-<div class="page" id="page-history">
-  <div class="page-header">
-    <div class="page-header-left"><h1>🕓 История изменений</h1><p>Все действия в системе</p></div>
-    <div class="page-header-actions">
-      <button class="btn btn-ghost btn-sm" onclick="filterHistory()">🔄 Обновить</button>
-      <button class="btn btn-danger btn-sm" onclick="confirmDelete(clearHistory,'Полностью очистить историю? Это нельзя отменить!')">🗑 Очистить историю</button>
-    </div>
-  </div>
-  <div class="filters">
-    <select class="filter-input" id="hist-type-filter" onchange="filterHistory()">
-      <option value="">Все действия</option>
-      <option value="create">Добавления</option>
-      <option value="update">Изменения</option>
-      <option value="delete">Удаления</option>
-    </select>
-    <select class="filter-input" id="hist-table-filter" onchange="filterHistory()">
-      <option value="">Все разделы</option>
-      <option value="biz_sales">Продажи</option>
-      <option value="biz_clients">Клиенты</option>
-      <option value="biz_expenses">Расходы</option>
-      <option value="biz_debts">Долги</option>
-      <option value="biz_konus">Конусы</option>
-      <option value="biz_purchases">Закупки</option>
-      <option value="biz_productions">Производство</option>
-    </select>
-    <input type="date" class="filter-input" id="hist-date-filter" onchange="filterHistory()">
-    <button class="btn btn-ghost btn-sm" onclick="clearHistFilters()">Сбросить</button>
-  </div>
-  <div class="table-card">
-    <div class="table-wrap"><table>
-      <thead><tr><th>Время</th><th>Действие</th><th>Раздел</th><th>Описание</th><th>Восстановить</th></tr></thead>
-      <tbody id="history-tb"></tbody>
-    </table></div>
-  </div>
-</div>
-
-</div><!-- /main -->
-
-<!-- ═══════════ MODALS ═══════════ -->
-
-<!-- QUICK SALE -->
-<div class="overlay" id="qs-modal">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <div class="modal-title">⚡ Быстрая продажа</div>
-      <button class="modal-close" onclick="closeOverlay('qs-modal')">✕</button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Клиент <span style="color:var(--red)">*</span></label>
-      <div style="display:flex;gap:8px;margin-bottom:6px">
-        <input type="text" class="form-input" id="qs-client-search" placeholder="🔍 Найти клиента..." oninput="filterQsClients()" style="flex:1">
-        <button class="btn btn-ghost btn-sm" onclick="openQuickAddClient()" title="Добавить нового клиента">+ Новый</button>
-      </div>
-      <div class="client-chips" id="qs-chips" style="margin-top:8px"></div>
-      <input type="hidden" id="qs-client-id">
-      <div id="qs-selected-client" style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600"></div>
-      <div id="qs-debt-warning" style="display:none;margin-top:8px;background:var(--red-light);border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--red)"></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Количество (<span id="qs-unit-label">кг</span>)</label>
-        <input type="number" class="form-input big" id="qs-qty" placeholder="0" step="0.1" oninput="calcQsTotal()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Цена за <span id="qs-unit-label2">кг</span> (₸)</label>
-        <input type="number" class="form-input big" id="qs-price" placeholder="0" oninput="calcQsTotal()">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Скидка (₸)</label>
-        <input type="number" class="form-input" id="qs-discount" placeholder="0" value="0" oninput="calcQsTotal()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Итого (₸) <span style="font-size:10px;color:var(--accent);font-weight:400">— можно изменить вручную</span></label>
-        <input type="number" class="form-input big" id="qs-total" placeholder="0" style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Способ оплаты</label>
-      <div class="pay-selector" id="qs-pay-selector" style="grid-template-columns:repeat(3,1fr)">
-        <div class="pay-opt selected" data-m="cash" onclick="selectQsPay(this,'cash')"><span class="pay-icon">💵</span>Наличные</div>
-        <div class="pay-opt" data-m="kaspi" onclick="selectQsPay(this,'kaspi')"><span class="pay-icon">🔴</span>Каспи</div>
-        <div class="pay-opt" data-m="kaspipay" onclick="selectQsPay(this,'kaspipay')"><span class="pay-icon">📱</span>Каспи Pay</div>
-        <div class="pay-opt" data-m="konus" onclick="selectQsPay(this,'konus')"><span class="pay-icon">🔺</span>Конус</div>
-        <div class="pay-opt" data-m="debt" onclick="selectQsPay(this,'debt')"><span class="pay-icon">📋</span>В долг</div>
-        <div class="pay-opt" data-m="mixed" onclick="selectQsPay(this,'mixed')"><span class="pay-icon">🔀</span>Смешанная</div>
-      </div>
-      <!-- Mixed payment fields -->
-      <div id="qs-mixed-fields" style="display:none;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Укажи сколько каким способом (сумма должна совпасть с итого)</div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">💵 Наличные</label><input type="number" class="form-input" id="qs-mix-cash" placeholder="0" oninput="checkMixedTotal()"></div>
-          <div class="form-group"><label class="form-label">🔴 Каспи</label><input type="number" class="form-input" id="qs-mix-kaspi" placeholder="0" oninput="checkMixedTotal()"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">📱 Каспи Pay</label><input type="number" class="form-input" id="qs-mix-kaspipay" placeholder="0" oninput="checkMixedTotal()"></div>
-          <div class="form-group"><label class="form-label">📋 В долг</label><input type="number" class="form-input" id="qs-mix-debt" placeholder="0" oninput="checkMixedTotal()"></div>
-        </div>
-        <div id="qs-mix-status" style="font-size:12px;font-weight:600;text-align:center;padding:6px;border-radius:8px;background:var(--accent-light);color:var(--accent)">Сумма: 0 ₸ из 0 ₸</div>
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Себестоимость/<span id="qs-unit-label3">кг</span></label>
-        <input type="number" class="form-input" id="qs-cost" placeholder="0">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Дата</label>
-        <input type="date" class="form-input" id="qs-date">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Заметка</label>
-      <input type="text" class="form-input" id="qs-note" placeholder="Необязательно">
-    </div>
-    <input type="hidden" id="qs-edit-id">
-    <div style="margin-bottom:12px">
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;opacity:0.6">
-        <input type="checkbox" id="qs-is-fl" onchange="toggleFlMode()"> ФЛ (физ. лицо — без клиента)
-      </label>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('qs-modal')">Отмена</button>
-      <button class="btn btn-primary btn-lg" onclick="saveSale()" id="qs-save-btn">💾 Сохранить продажу</button>
-    </div>
-  </div>
-</div>
-
-<!-- CLIENT MODAL -->
-<div class="overlay" id="cl-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="cl-modal-title">👥 Новый клиент</div>
-      <button class="modal-close" onclick="closeOverlay('cl-modal')">✕</button>
-    </div>
-    <input type="hidden" id="cl-edit-id">
-    <div class="form-group"><label class="form-label">Имя</label><input type="text" class="form-input" id="cl-name" placeholder="Имя клиента"></div>
-    <div class="form-group"><label class="form-label">Название магазина</label><input type="text" class="form-input" id="cl-shop" placeholder="Магазин / Точка"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-input" id="cl-phone" placeholder="+7 777..."></div>
-      <div class="form-group"><label class="form-label">Тип клиента</label>
-        <select class="form-select" id="cl-type">
-          <option value="retail">Розница</option>
-          <option value="wholesale">Оптовик</option>
-          <option value="shop">Магазин</option>
-          <option value="conusniy">Конусный</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="cl-address" placeholder="Улица, дом"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Скидка (%)</label><input type="number" class="form-input" id="cl-discount" placeholder="0" value="0"></div>
-      <div class="form-group"><label class="form-label">Цена для клиента (₸/кг)</label><input type="number" class="form-input" id="cl-price" placeholder="Особая цена"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="cl-note" placeholder="Любая информация"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('cl-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveClient()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- DEBT MODAL -->
-<div class="overlay" id="debt-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">📋 Долг</div>
-      <button class="modal-close" onclick="closeOverlay('debt-modal')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">Клиент</label>
-      <select class="form-select" id="dbt-client"></select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Кг товара</label><input type="number" class="form-input" id="dbt-kg" placeholder="0" step="0.1"></div>
-      <div class="form-group"><label class="form-label">Сумма (₸)</label><input type="number" class="form-input" id="dbt-amount" placeholder="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Дата взятия</label><input type="date" class="form-input" id="dbt-date"></div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="dbt-note" placeholder="За что долг"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('debt-modal')">Отмена</button>
-      <button class="btn btn-warning" onclick="saveDebt()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- PAY DEBT -->
-<div class="overlay" id="paydebt-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">✅ Погашение долга</div>
-      <button class="modal-close" onclick="closeOverlay('paydebt-modal')">✕</button>
-    </div>
-    <input type="hidden" id="pd-id">
-    <div class="form-group"><label class="form-label">Клиент</label><input class="form-input" id="pd-client" readonly style="opacity:0.7"></div>
-    <div class="form-group"><label class="form-label">Остаток долга</label><input class="form-input" id="pd-remaining" readonly style="opacity:0.7;color:var(--red);font-weight:700"></div>
-    <div class="form-group"><label class="form-label">Сумма оплаты (₸)</label><input type="number" class="form-input big" id="pd-amount" placeholder="0"></div>
-    <div class="form-group"><label class="form-label">Как вернул</label>
-      <div class="pay-selector" id="pd-pay-selector" style="grid-template-columns:repeat(3,1fr)">
-        <div class="pay-opt selected" data-m="cash" onclick="selectPdPay(this,'cash')"><span class="pay-icon">💵</span>Нал</div>
-        <div class="pay-opt" data-m="kaspi" onclick="selectPdPay(this,'kaspi')"><span class="pay-icon">🔴</span>Каспи</div>
-        <div class="pay-opt" data-m="kaspipay" onclick="selectPdPay(this,'kaspipay')"><span class="pay-icon">📱</span>QR</div>
-      </div>
-    </div>
-    <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="pd-date"></div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="pd-note" placeholder="Необязательно"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('paydebt-modal')">Отмена</button>
-      <button class="btn btn-success" id="pd-save-btn" onclick="savePayDebt()">✓ Оплачено</button>
-    </div>
-  </div>
-</div>
-
-<!-- EXCHANGE MODAL -->
-<div class="overlay" id="exch-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">🔄 Обмен товара</div>
-      <button class="modal-close" onclick="closeOverlay('exch-modal')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">Клиент</label><select class="form-select" id="exch-client"></select></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Кг к обмену</label><input type="number" class="form-input" id="exch-kg-inp" placeholder="0" step="0.1"></div>
-      <div class="form-group"><label class="form-label">Сумма вычета (₸)</label><input type="number" class="form-input" id="exch-amount" placeholder="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Причина</label><input type="text" class="form-input" id="exch-reason" placeholder="Испорченный товар..."></div>
-    <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="exch-date"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('exch-modal')">Отмена</button>
-      <button class="btn btn-warning" onclick="saveExchange()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<!-- EXPENSE MODAL -->
-<div class="overlay" id="exp-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">💸 Расход</div>
-      <button class="modal-close" onclick="closeOverlay('exp-modal')">✕</button>
-    </div>
-    <div class="form-group"><label class="form-label">Категория</label>
-      <select class="form-select" id="exp-cat"></select>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Сумма (₸)</label><input type="number" class="form-input" id="exp-amount" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="exp-date"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Сотрудник (если личные)</label>
-      <select class="form-select" id="exp-employee">
-        <option value="">— Не указано —</option>
-        <option>Ерлан</option><option>Меерим</option><option>Ербол</option><option>Шавхад</option>
-      </select>
-    </div>
-    <div class="form-group"><label class="form-label">Описание</label><input type="text" class="form-input" id="exp-desc" placeholder="Что за расход?"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('exp-modal')">Отмена</button>
-      <button class="btn btn-danger" onclick="saveExpense()">Добавить</button>
-    </div>
-  </div>
-</div>
-
-<!-- PRODUCE MODAL -->
-<div class="overlay" id="prod-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title">📦 Производство</div>
-      <button class="modal-close" onclick="closeOverlay('prod-modal')">✕</button>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Произведено (кг)</label><input type="number" class="form-input big" id="pr-qty" placeholder="0" step="0.1"></div>
-      <div class="form-group"><label class="form-label">Себест./кг (₸)</label><input type="number" class="form-input" id="pr-cost" placeholder="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="pr-date"></div>
-    <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="pr-note" placeholder="Необязательно"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('prod-modal')">Отмена</button>
-      <button class="btn btn-success" onclick="saveProduce()">Добавить</button>
-    </div>
-  </div>
-</div>
-
-<!-- CLIENT DETAIL MODAL -->
-<div class="overlay" id="cl-detail-modal">
-  <div class="modal modal-lg">
-    <div class="modal-header">
-      <div class="modal-title" id="cl-detail-title">Клиент</div>
-      <button class="modal-close" onclick="closeOverlay('cl-detail-modal')">✕</button>
-    </div>
-    <div id="cl-detail-body"></div>
-  </div>
-</div>
-
-<script>const SUPABASE_URL = 'https://mdqbgcvxiwqvseanzpbx.supabase.co';
+  </div> <div class="section-label">Ингредиенты на 1 кг товара</div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Ингредиент</th><th>Граммов на 1 кг</th><th>Последняя цена (₸/кг)</th><th>Источник цены</th><th>Стоимость на 1 кг</th><th></th></tr></thead> <tbody id="recipe-tb"></tbody> </table></div> </div>
+</div> <div class="page" id="page-rentab"> <div class="page-header"> <div class="page-header-left"><h1>💹 Рентабельность</h1><p>Полная финансовая картина бизнеса</p></div> <div class="page-header-actions"> <select class="filter-input" id="ren-period" onchange="renderRentab()"> <option value="month">Этот месяц</option> <option value="quarter">Квартал</option> <option value="year">Этот год</option> <option value="all">Всё время</option> </select> <button class="btn btn-ghost btn-sm" onclick="exportRentabExcel()">📥 Excel</button> </div> </div> <div id="rentab-body"></div>
+</div> <div class="page" id="page-history"> <div class="page-header"> <div class="page-header-left"><h1>🕓 История изменений</h1><p>Все действия в системе</p></div> <div class="page-header-actions"> <button class="btn btn-ghost btn-sm" onclick="filterHistory()">🔄 Обновить</button> <button class="btn btn-danger btn-sm" onclick="confirmDelete(clearHistory,'Полностью очистить историю? Это нельзя отменить!')">🗑 Очистить историю</button> </div> </div> <div class="filters"> <select class="filter-input" id="hist-type-filter" onchange="filterHistory()"> <option value="">Все действия</option> <option value="create">Добавления</option> <option value="update">Изменения</option> <option value="delete">Удаления</option> </select> <select class="filter-input" id="hist-table-filter" onchange="filterHistory()"> <option value="">Все разделы</option> <option value="biz_sales">Продажи</option> <option value="biz_clients">Клиенты</option> <option value="biz_expenses">Расходы</option> <option value="biz_debts">Долги</option> <option value="biz_konus">Конусы</option> <option value="biz_purchases">Закупки</option> <option value="biz_productions">Производство</option> </select> <input type="date" class="filter-input" id="hist-date-filter" onchange="filterHistory()"> <button class="btn btn-ghost btn-sm" onclick="clearHistFilters()">Сбросить</button> </div> <div class="table-card"> <div class="table-wrap"><table> <thead><tr><th>Время</th><th>Действие</th><th>Раздел</th><th>Описание</th><th>Восстановить</th></tr></thead> <tbody id="history-tb"></tbody> </table></div> </div>
+</div> </div> <div class="overlay" id="qs-modal"> <div class="modal modal-lg"> <div class="modal-header"> <div class="modal-title">⚡ Быстрая продажа</div> <button class="modal-close" onclick="closeOverlay('qs-modal')">✕</button> </div> <div class="form-group"> <label class="form-label">Клиент <span style="color:var(--red)">*</span></label> <div style="display:flex;gap:8px;margin-bottom:6px"> <input type="text" class="form-input" id="qs-client-search" placeholder="🔍 Найти клиента..." oninput="filterQsClients()" style="flex:1"> <button class="btn btn-ghost btn-sm" onclick="openQuickAddClient()" title="Добавить нового клиента">+ Новый</button> </div> <div class="client-chips" id="qs-chips" style="margin-top:8px"></div> <input type="hidden" id="qs-client-id"> <div id="qs-selected-client" style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600"></div> <div id="qs-debt-warning" style="display:none;margin-top:8px;background:var(--red-light);border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--red)"></div> </div> <div class="form-row"> <div class="form-group"> <label class="form-label">Количество (<span id="qs-unit-label">кг</span>)</label> <input type="number" class="form-input big" id="qs-qty" placeholder="0" step="0.1" oninput="calcQsTotal()"> </div> <div class="form-group"> <label class="form-label">Цена за <span id="qs-unit-label2">кг</span> (₸)</label> <input type="number" class="form-input big" id="qs-price" placeholder="0" oninput="calcQsTotal()"> </div> </div> <div class="form-row"> <div class="form-group"> <label class="form-label">Скидка (₸)</label> <input type="number" class="form-input" id="qs-discount" placeholder="0" value="0" oninput="calcQsTotal()"> </div> <div class="form-group"> <label class="form-label">Итого (₸) <span style="font-size:10px;color:var(--accent);font-weight:400">— можно изменить вручную</span></label> <input type="number" class="form-input big" id="qs-total" placeholder="0" style="background:var(--accent-light);border-color:var(--accent);color:var(--accent)"> </div> </div> <div class="form-group"> <label class="form-label">Способ оплаты</label> <div class="pay-selector" id="qs-pay-selector" style="grid-template-columns:repeat(3,1fr)"> <div class="pay-opt selected" data-m="cash" onclick="selectQsPay(this,'cash')"><span class="pay-icon">💵</span>Наличные</div> <div class="pay-opt" data-m="kaspi" onclick="selectQsPay(this,'kaspi')"><span class="pay-icon">🔴</span>Каспи</div> <div class="pay-opt" data-m="kaspipay" onclick="selectQsPay(this,'kaspipay')"><span class="pay-icon">📱</span>Каспи Pay</div> <div class="pay-opt" data-m="konus" onclick="selectQsPay(this,'konus')"><span class="pay-icon">🔺</span>Конус</div> <div class="pay-opt" data-m="debt" onclick="selectQsPay(this,'debt')"><span class="pay-icon">📋</span>В долг</div> <div class="pay-opt" data-m="mixed" onclick="selectQsPay(this,'mixed')"><span class="pay-icon">🔀</span>Смешанная</div> </div> <div id="qs-mixed-fields" style="display:none;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px"> <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Укажи сколько каким способом (сумма должна совпасть с итого)</div> <div class="form-row"> <div class="form-group"><label class="form-label">💵 Наличные</label><input type="number" class="form-input" id="qs-mix-cash" placeholder="0" oninput="checkMixedTotal()"></div> <div class="form-group"><label class="form-label">🔴 Каспи</label><input type="number" class="form-input" id="qs-mix-kaspi" placeholder="0" oninput="checkMixedTotal()"></div> </div> <div class="form-row"> <div class="form-group"><label class="form-label">📱 Каспи Pay</label><input type="number" class="form-input" id="qs-mix-kaspipay" placeholder="0" oninput="checkMixedTotal()"></div> <div class="form-group"><label class="form-label">📋 В долг</label><input type="number" class="form-input" id="qs-mix-debt" placeholder="0" oninput="checkMixedTotal()"></div> </div> <div id="qs-mix-status" style="font-size:12px;font-weight:600;text-align:center;padding:6px;border-radius:8px;background:var(--accent-light);color:var(--accent)">Сумма: 0 ₸ из 0 ₸</div> </div> </div> <div class="form-row"> <div class="form-group"> <label class="form-label">Себестоимость/<span id="qs-unit-label3">кг</span></label> <input type="number" class="form-input" id="qs-cost" placeholder="0"> </div> <div class="form-group"> <label class="form-label">Дата</label> <input type="date" class="form-input" id="qs-date"> </div> </div> <div class="form-group"> <label class="form-label">Заметка</label> <input type="text" class="form-input" id="qs-note" placeholder="Необязательно"> </div> <input type="hidden" id="qs-edit-id"> <div style="margin-bottom:12px"> <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);cursor:pointer;opacity:0.6"> <input type="checkbox" id="qs-is-fl" onchange="toggleFlMode()"> ФЛ (физ. лицо — без клиента)
+      </label> </div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('qs-modal')">Отмена</button> <button class="btn btn-primary btn-lg" onclick="saveSale()" id="qs-save-btn">💾 Сохранить продажу</button> </div> </div>
+</div> <div class="overlay" id="cl-modal"> <div class="modal"> <div class="modal-header"> <div class="modal-title" id="cl-modal-title">👥 Новый клиент</div> <button class="modal-close" onclick="closeOverlay('cl-modal')">✕</button> </div> <input type="hidden" id="cl-edit-id"> <div class="form-group"><label class="form-label">Имя</label><input type="text" class="form-input" id="cl-name" placeholder="Имя клиента"></div> <div class="form-group"><label class="form-label">Название магазина</label><input type="text" class="form-input" id="cl-shop" placeholder="Магазин / Точка"></div> <div class="form-row"> <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-input" id="cl-phone" placeholder="+7 777..."></div> <div class="form-group"><label class="form-label">Тип клиента</label> <select class="form-select" id="cl-type"> <option value="retail">Розница</option> <option value="wholesale">Оптовик</option> <option value="shop">Магазин</option> <option value="conusniy">Конусный</option> </select> </div> </div> <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="cl-address" placeholder="Улица, дом"></div> <div class="form-row"> <div class="form-group"><label class="form-label">Скидка (%)</label><input type="number" class="form-input" id="cl-discount" placeholder="0" value="0"></div> <div class="form-group"><label class="form-label">Цена для клиента (₸/кг)</label><input type="number" class="form-input" id="cl-price" placeholder="Особая цена"></div> </div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="cl-note" placeholder="Любая информация"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('cl-modal')">Отмена</button> <button class="btn btn-primary" onclick="saveClient()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="debt-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">📋 Долг</div> <button class="modal-close" onclick="closeOverlay('debt-modal')">✕</button> </div> <div class="form-group"><label class="form-label">Клиент</label> <select class="form-select" id="dbt-client"></select> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Кг товара</label><input type="number" class="form-input" id="dbt-kg" placeholder="0" step="0.1"></div> <div class="form-group"><label class="form-label">Сумма (₸)</label><input type="number" class="form-input" id="dbt-amount" placeholder="0"></div> </div> <div class="form-group"><label class="form-label">Дата взятия</label><input type="date" class="form-input" id="dbt-date"></div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="dbt-note" placeholder="За что долг"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('debt-modal')">Отмена</button> <button class="btn btn-warning" onclick="saveDebt()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="paydebt-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">✅ Погашение долга</div> <button class="modal-close" onclick="closeOverlay('paydebt-modal')">✕</button> </div> <input type="hidden" id="pd-id"> <div class="form-group"><label class="form-label">Клиент</label><input class="form-input" id="pd-client" readonly style="opacity:0.7"></div> <div class="form-group"><label class="form-label">Остаток долга</label><input class="form-input" id="pd-remaining" readonly style="opacity:0.7;color:var(--red);font-weight:700"></div> <div class="form-group"><label class="form-label">Сумма оплаты (₸)</label><input type="number" class="form-input big" id="pd-amount" placeholder="0"></div> <div class="form-group"><label class="form-label">Как вернул</label> <div class="pay-selector" id="pd-pay-selector" style="grid-template-columns:repeat(3,1fr)"> <div class="pay-opt selected" data-m="cash" onclick="selectPdPay(this,'cash')"><span class="pay-icon">💵</span>Нал</div> <div class="pay-opt" data-m="kaspi" onclick="selectPdPay(this,'kaspi')"><span class="pay-icon">🔴</span>Каспи</div> <div class="pay-opt" data-m="kaspipay" onclick="selectPdPay(this,'kaspipay')"><span class="pay-icon">📱</span>QR</div> </div> </div> <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="pd-date"></div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="pd-note" placeholder="Необязательно"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('paydebt-modal')">Отмена</button> <button class="btn btn-success" id="pd-save-btn" onclick="savePayDebt()">✓ Оплачено</button> </div> </div>
+</div> <div class="overlay" id="exch-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">🔄 Обмен товара</div> <button class="modal-close" onclick="closeOverlay('exch-modal')">✕</button> </div> <div class="form-group"><label class="form-label">Клиент</label><select class="form-select" id="exch-client"></select></div> <div class="form-row"> <div class="form-group"><label class="form-label">Кг к обмену</label><input type="number" class="form-input" id="exch-kg-inp" placeholder="0" step="0.1"></div> <div class="form-group"><label class="form-label">Сумма вычета (₸)</label><input type="number" class="form-input" id="exch-amount" placeholder="0"></div> </div> <div class="form-group"><label class="form-label">Причина</label><input type="text" class="form-input" id="exch-reason" placeholder="Испорченный товар..."></div> <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="exch-date"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('exch-modal')">Отмена</button> <button class="btn btn-warning" onclick="saveExchange()">Сохранить</button> </div> </div>
+</div> <div class="overlay" id="exp-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">💸 Расход</div> <button class="modal-close" onclick="closeOverlay('exp-modal')">✕</button> </div> <div class="form-group"><label class="form-label">Категория</label> <select class="form-select" id="exp-cat"></select> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Сумма (₸)</label><input type="number" class="form-input" id="exp-amount" placeholder="0"></div> <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="exp-date"></div> </div> <div class="form-group"><label class="form-label">Сотрудник (если личные)</label> <select class="form-select" id="exp-employee"> <option value="">— Не указано —</option> <option>Ерлан</option><option>Меерим</option><option>Ербол</option><option>Шавхад</option> </select> </div> <div class="form-group"><label class="form-label">Описание</label><input type="text" class="form-input" id="exp-desc" placeholder="Что за расход?"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('exp-modal')">Отмена</button> <button class="btn btn-danger" onclick="saveExpense()">Добавить</button> </div> </div>
+</div> <div class="overlay" id="prod-modal"> <div class="modal modal-sm"> <div class="modal-header"> <div class="modal-title">📦 Производство</div> <button class="modal-close" onclick="closeOverlay('prod-modal')">✕</button> </div> <div class="form-row"> <div class="form-group"><label class="form-label">Произведено (кг)</label><input type="number" class="form-input big" id="pr-qty" placeholder="0" step="0.1"></div> <div class="form-group"><label class="form-label">Себест./кг (₸)</label><input type="number" class="form-input" id="pr-cost" placeholder="0"></div> </div> <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="pr-date"></div> <div class="form-group"><label class="form-label">Заметка</label><input type="text" class="form-input" id="pr-note" placeholder="Необязательно"></div> <div class="modal-footer"> <button class="btn btn-ghost" onclick="closeOverlay('prod-modal')">Отмена</button> <button class="btn btn-success" onclick="saveProduce()">Добавить</button> </div> </div>
+</div> <div class="overlay" id="cl-detail-modal"> <div class="modal modal-lg"> <div class="modal-header"> <div class="modal-title" id="cl-detail-title">Клиент</div> <button class="modal-close" onclick="closeOverlay('cl-detail-modal')">✕</button> </div> <div id="cl-detail-body"></div> </div>
+</div> <script>const SUPABASE_URL = 'https://mdqbgcvxiwqvseanzpbx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_zlfDYgzf7oIdXrfJG7327Q_O1gUQJTm';
 const {createClient} = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -1534,20 +454,18 @@ let recipeItems=[], historyLog=[];
 let qsPayMethod='cash';
 let charts={};
 let isSaving=false;
-
-// Universal save guard — prevents any double submission
 async function withSaving(fn, btnId=null) {
-  if(isSaving) return;
-  isSaving=true;
-  const btn = btnId ? document.getElementById(btnId) : null;
-  const origText = btn?.textContent;
-  if(btn) { btn.disabled=true; btn.textContent='Сохранение...'; }
-  try { await fn(); }
-  catch(e) { console.error('Save error:', e); toast('Ошибка сохранения','error'); }
-  finally {
-    isSaving=false;
-    if(btn) { btn.disabled=false; btn.textContent=origText; }
-  }
+if(isSaving) return;
+isSaving=true;
+const btn = btnId ? document.getElementById(btnId) : null;
+const origText = btn?.textContent;
+if(btn) { btn.disabled=true; btn.textContent='Сохранение...'; }
+try { await fn(); }
+catch(e) { console.error('Save error:', e); toast('Ошибка сохранения','error'); }
+finally {
+isSaving=false;
+if(btn) { btn.disabled=false; btn.textContent=origText; }
+}
 }
 const today=()=>new Date().toISOString().split('T')[0];
 const thisMonth=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;};
@@ -1662,11 +580,11 @@ setText('dc-exp', fmt(monthExp)+' ₸');
 setText('dc-profit', fmt(profit)+' ₸');
 document.getElementById('dc-profit').style.color=profit>=0?'var(--green)':'var(--red)';
 const cash=todaySales.filter(s=>s.payment==='cash').reduce((a,s)=>a+s.total,0)
-  +todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_cash||0),0);
++todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_cash||0),0);
 const kaspi=todaySales.filter(s=>s.payment==='kaspi').reduce((a,s)=>a+s.total,0)
-  +todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_kaspi||0),0);
++todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_kaspi||0),0);
 const kp=todaySales.filter(s=>s.payment==='kaspipay').reduce((a,s)=>a+s.total,0)
-  +todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_kaspipay||0),0);
++todaySales.filter(s=>s.payment==='mixed').reduce((a,s)=>a+(s.mix_kaspipay||0),0);
 const konusToday=sales.filter(s=>s.date===t&&s.payment==='konus').reduce((a,s)=>a+s.total,0);
 const debtCash=debtPay.filter(p=>p.date===t&&p.payment==='cash').reduce((a,p)=>a+p.amount,0);
 const debtKaspi=debtPay.filter(p=>p.date===t&&p.payment==='kaspi').reduce((a,p)=>a+p.amount,0);
@@ -1823,7 +741,6 @@ const note=document.getElementById('qs-note').value||'';
 const editId=document.getElementById('qs-edit-id').value;
 if(!qty||!price){toast('Укажите количество и цену','error');return;}
 if(!isFL && !client_id){toast('⚠️ Выберите клиента','error');return;}
-// validate mixed
 let mixCash=0,mixKaspi=0,mixKP=0,mixDebt=0;
 if(qsPayMethod==='mixed') {
 mixCash=parseFloat(document.getElementById('qs-mix-cash').value)||0;
@@ -1850,7 +767,6 @@ if(qsPayMethod==='konus'&&!editId) {
 const {error:ke}=await db.from('biz_konus').insert({client_id:cid,amount:total,remaining:total,kg:qty,date,note:'Конус из продажи'});
 if(ke) toast('Конус не сохранён: '+ke.message,'error');
 }
-// mixed: if has debt part — create debt record
 if(qsPayMethod==='mixed'&&!editId&&mixDebt>0) {
 await db.from('biz_debts').insert({client_id:cid,amount:mixDebt,remaining:mixDebt,kg:0,date,note:'Часть долга из продажи'});
 }
@@ -1985,12 +901,9 @@ setText('cl-debt-cnt',withDebt);
 setText('cl-exch-cnt',withExch);
 const container=document.getElementById('clients-list');
 if(!list.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><p>Клиентов нет</p></div>';return;}
-
-// week helpers
 const weekStart=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
 const thisWeek=weekStart(today());
 const lastWeek=weekStart(new Date(new Date()-7*86400000).toISOString().split('T')[0]);
-
 container.innerHTML=list.map(c=>{
 const cSales=sales.filter(s=>s.client_id===c.id&&s.payment!=='debt');
 const totalRev=cSales.reduce((a,s)=>a+s.total,0);
@@ -2039,7 +952,6 @@ const cExch=exchanges.filter(e=>e.client_id===id);
 const totalRev=cSales.filter(s=>s.payment!=='debt').reduce((a,s)=>a+s.total,0);
 const totalKg=cSales.reduce((a,s)=>a+s.qty,0);
 const activeDebt=cDebts.filter(d=>d.remaining>0).reduce((a,d)=>a+d.remaining,0);
-// weekly breakdown last 8 weeks
 const weekStart=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
 const weeks=[];
 for(let i=7;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i*7);weeks.push(weekStart(d.toISOString().split('T')[0]));}
@@ -2133,7 +1045,7 @@ setText('dbt-cnt',active.length);
 setText('dbt-paid',fmt(paidM)+' ₸');
 updateBadges();
 const list=document.getElementById('debts-list');
-if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Долгов нет!</p></div>';} 
+if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Долгов нет!</p></div>';}
 else list.innerHTML=active.map(d=>`
 <div class="debt-card">
 <div class="debt-top">
@@ -2217,7 +1129,6 @@ btn.disabled=false; btn.textContent='✓ Оплачено';
 async function deleteDebtPay(id) {
 confirmDelete(async()=>{
 const p=debtPay.find(x=>x.id===id); if(!p) return;
-// restore remaining
 const d=debts.find(x=>x.id===p.debt_id);
 if(d) await db.from('biz_debts').update({remaining:d.remaining+p.amount}).eq('id',d.id);
 await db.from('biz_debt_payments').delete().eq('id',id);
@@ -3514,7 +2425,6 @@ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 this.classList.add('active');
 });
 });
-init();
-</script>
+init();</script>
 </body>
 </html>
