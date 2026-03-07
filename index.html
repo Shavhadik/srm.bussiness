@@ -1691,8 +1691,8 @@ return `<tr>
 <td><b>${fmt(s.total)} ₸</b></td>
 <td>${payBadge(s.payment)}</td>
 <td style="display:flex;gap:4px">
-<button class="btn btn-ghost btn-sm btn-icon" onclick="editSale(${JSON.stringify(sid)})" title="Редактировать">✏️</button>
-<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale(${JSON.stringify(sid)})" title="Удалить">🗑</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="editSale('${sid}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale('${sid}')" title="Удалить">🗑</button>
 </td>
 </tr>`;
 }).join('');
@@ -1764,8 +1764,8 @@ ${s.note?`<div style="font-size:11px;color:var(--text2)">${s.note}</div>`:''}
 <td style="color:var(--text2);font-size:12px">${s.cost_per_kg?fmt(s.cost_per_kg*s.qty)+' ₸':'—'}</td>
 <td style="font-weight:600;color:${profit!==null?(profit>=0?'var(--green)':'var(--red)'):'var(--text2)'}">${profit!==null?fmt(profit)+' ₸':'—'}</td>
 <td style="display:flex;gap:4px">
-<button class="btn btn-ghost btn-sm btn-icon" onclick="editSale(${JSON.stringify(sid)})" title="Редактировать">✏️</button>
-<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale(${JSON.stringify(sid)})" title="Удалить">🗑</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="editSale('${sid}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale('${sid}')" title="Удалить">🗑</button>
 </td>
 </tr>`;
 }).join('');
