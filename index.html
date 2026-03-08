@@ -972,7 +972,7 @@ tbody tr:hover { background:#fafbff; }
 <div class="overlay" id="purchase-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">🛒 Новая закупка</div>
+      <div class="modal-title" id="pur-modal-title">🛒 Новая закупка</div>
       <button class="modal-close" onclick="closeOverlay('purchase-modal')">✕</button>
     </div>
     <input type="hidden" id="pur-edit-id">
@@ -1025,7 +1025,7 @@ tbody tr:hover { background:#fafbff; }
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeOverlay('purchase-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="savePurchase()">Сохранить</button>
+      <button class="btn btn-primary" id="pur-save-btn" onclick="savePurchase()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -3452,9 +3452,12 @@ tb.innerHTML=list.map(p=>`<tr>
 }
 function openPurchaseModal(id='') {
 document.getElementById('pur-edit-id').value=id;
+document.getElementById('pur-modal-title').textContent=id?'✏️ Редактировать закупку':'🛒 Новая закупка';
+document.getElementById('pur-save-btn').textContent=id?'💾 Сохранить изменения':'Сохранить';
 if(id) {
 const p=purchases.find(x=>x.id===id); if(!p) return;
-document.getElementById('pur-cat-inp').value=p.category||'Мука';
+// Set category after select is populated
+setTimeout(()=>{ const sel=document.getElementById('pur-cat-inp'); if(sel) sel.value=p.category||''; },50);
 document.getElementById('pur-product').value=p.product||'';
 document.getElementById('pur-qty').value=p.qty||'';
 document.getElementById('pur-unit').value=p.unit||'кг';
