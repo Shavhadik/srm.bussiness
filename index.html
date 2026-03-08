@@ -760,10 +760,18 @@ tbody tr:hover { background:#fafbff; }
     <div class="chart-card"><div class="chart-title">💸 Расходы по категориям</div><canvas id="chart-exp"></canvas></div>
   </div>
   <div class="chart-card"><div class="chart-title">📦 Производство vs Продажи (кг)</div><canvas id="chart-stock"></canvas></div>
-  <div class="section-label">Топ клиентов по выручке</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <div class="section-label" style="margin:0">Топ клиентов по выручке</div>
+    <select class="filter-input" id="top-clients-period" onchange="renderTopClients()" style="width:auto;font-size:12px">
+      <option value="all">Всё время</option>
+      <option value="month" selected>Этот месяц</option>
+      <option value="week">Эта неделя</option>
+      <option value="today">Сегодня</option>
+    </select>
+  </div>
   <div class="table-card">
     <div class="table-wrap"><table>
-      <thead><tr><th>#</th><th>Клиент</th><th>Покупок</th><th>Кг всего</th><th>Выручка</th><th>Долг</th></tr></thead>
+      <thead><tr><th>#</th><th>Клиент</th><th>Покупок</th><th>Кг</th><th>Выручка</th><th>Долг</th></tr></thead>
       <tbody id="top-clients-tb"></tbody>
     </table></div>
   </div>
@@ -878,7 +886,8 @@ tbody tr:hover { background:#fafbff; }
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Граммов на 1 кг товара</label>
-        <input type="number" class="form-input" id="ri-grams" placeholder="0" step="0.1" oninput="calcRiCost()">
+        <input type="number" class="form-input" id="ri-grams" placeholder="например 500" step="1" oninput="calcRiCost()">
+        <div class="form-hint">Сколько граммов этого ингредиента идёт на 1 кг готового товара. Пример: мука 600г → введи 600</div>
       </div>
       <div class="form-group"><label class="form-label">Цена за кг (₸)</label>
         <input type="number" class="form-input" id="ri-price" placeholder="Авто из закупок" oninput="calcRiCost()">
@@ -1602,7 +1611,7 @@ renderDashboard(); renderSalesPage(); renderClients();
 renderDebts(); renderExchanges(); renderExpenses(); renderWarehouse();
 renderInventory(); renderPurchases(); renderSuppliers(); renderKonus();
 renderRecipe(); renderRentab(); filterHistory();
-renderExpCatSettings(); renderPurCatSettings();
+renderExpCatSettings(); renderPurCatSettings(); renderTopClients();
 populateSelects(); updateBadges();
 document.getElementById('dash-date-str').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 checkStockWarning();
@@ -2478,14 +2487,36 @@ const prodD=dates.map(d=>productions.filter(p=>p.date===d).reduce((a,p)=>a+p.qty
 const soldD=dates.map(d=>sales.filter(s=>s.date===d).reduce((a,s)=>a+s.qty,0));
 if(charts.stock) charts.stock.destroy();
 charts.stock=new Chart(document.getElementById('chart-stock'),{type:'line',data:{labels:dates.map(d=>d.slice(5)),datasets:[{label:'Произведено',data:prodD,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:0.3,borderWidth:2},{label:'Продано',data:soldD,borderColor:'#4f6ef7',backgroundColor:'rgba(79,110,247,0.1)',fill:true,tension:0.3,borderWidth:2}]},options:{plugins:{legend:{labels:{color:'#6b7280',font:{size:12}}}},scales:{x:{ticks:{color:'#9ca3af',font:{size:10},maxRotation:45}},y:{ticks:{color:'#9ca3af'}}}}});
+renderTopClients();
+}
+function renderTopClients() {
+const period=document.getElementById('top-clients-period')?.value||'month';
+const t=today(), m=thisMonth();
+const now=new Date();
+const dayOfWeek=now.getDay()===0?6:now.getDay()-1;
+const weekStart=new Date(now);
+weekStart.setDate(now.getDate()-dayOfWeek);
+const weekStartStr=weekStart.toISOString().split('T')[0];
+const filterSale=(s)=>{
+if(s.payment==='debt') return false;
+if(period==='today') return s.date===t;
+if(period==='week') return s.date>=weekStartStr;
+if(period==='month') return s.date?.startsWith(m);
+return true;
+};
+const periodLabel={today:'сегодня',week:'за неделю',month:'за месяц',all:'за всё время'}[period];
 const topCl=clients.map(c=>{
-const cs=sales.filter(s=>s.client_id===c.id&&s.payment!=='debt');
+const cs=sales.filter(s=>s.client_id===c.id&&filterSale(s));
 const rev=cs.reduce((a,s)=>a+s.total,0);
 const kg=cs.reduce((a,s)=>a+s.qty,0);
 const debt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
 return{...c,rev,kg,cnt:cs.length,debt};
-}).sort((a,b)=>b.rev-a.rev).slice(0,10);
+}).filter(c=>c.rev>0).sort((a,b)=>b.rev-a.rev).slice(0,10);
 const tb=document.getElementById('top-clients-tb');
+if(!topCl.length){
+tb.innerHTML=`<tr><td colspan="6" class="empty-state">Нет продаж ${periodLabel}</td></tr>`;
+return;
+}
 tb.innerHTML=topCl.map((c,i)=>`<tr>
 <td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</td>
 <td><b>${c.name}</b>${c.shop?` <span style="color:var(--text2);font-size:12px">/ ${c.shop}</span>`:''}</td>
@@ -2744,10 +2775,10 @@ if(!price) hasWarning=true;
 totalCostPerKg += costPer1kg;
 return `<tr style="${!price?'background:var(--yellow-light)':''}">
 <td><b>${item.name}</b>${item.note?`<div style="font-size:11px;color:var(--text2)">${item.note}</div>`:''}</td>
-<td>${item.grams_per_kg} г</td>
+<td>${item.grams_per_kg} г<div style="font-size:10px;color:var(--text2)">(${(item.grams_per_kg/1000).toFixed(3)} кг)</div></td>
 <td>${price?fmt(price)+' ₸':'<span style="color:var(--yellow)">не указана</span>'}</td>
-<td><span style="font-size:11px;color:var(--text2)">${source}</span>${autoPrice&&!manualPrice?`<div style="font-size:10px;color:var(--text2)">из закупок</div>`:''}</td>
-<td><b>${costPer1kg?fmt(Math.round(costPer1kg))+' ₸':'—'}</b></td>
+<td><span style="font-size:11px;color:var(--text2)">${source}</span></td>
+<td><b style="color:${costPer1kg>0?'inherit':'var(--red)'}">${costPer1kg>=1?fmt(Math.round(costPer1kg))+' ₸':costPer1kg>0?(costPer1kg).toFixed(2)+' ₸':'—'}</b>${costPer1kg>0&&costPer1kg<1?`<div style="font-size:10px;color:var(--red)">⚠️ Проверь граммы!</div>`:''}</td>
 <td style="display:flex;gap:4px">
 <button class="btn btn-ghost btn-sm btn-icon" onclick="openRecipeItemModal('${item.id}')">✏️</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDelete(()=>deleteRecipeItem('${item.id}'))">🗑</button>
