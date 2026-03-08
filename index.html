@@ -601,10 +601,20 @@ tbody tr:hover { background:#fafbff; }
       <button class="btn btn-primary" onclick="openClientModal()">+ Добавить клиента</button>
     </div>
   </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+  <div class="cards" style="grid-template-columns:repeat(4,1fr)">
     <div class="card"><div class="card-label">Всего клиентов</div><div class="card-value" id="cl-total">0</div></div>
     <div class="card"><div class="card-label">С долгом</div><div class="card-value" style="color:var(--red)" id="cl-debt-cnt">0</div></div>
     <div class="card"><div class="card-label">С обменом</div><div class="card-value" style="color:var(--yellow)" id="cl-exch-cnt">0</div></div>
+    <div class="card" style="cursor:pointer" onclick="document.getElementById('cl-week-alert').scrollIntoView({behavior:'smooth'})">
+      <div class="card-label">⚠️ Взяли меньше</div>
+      <div class="card-value" style="color:var(--red)" id="cl-less-cnt">0</div>
+      <div class="card-sub" id="cl-less-sum"></div>
+    </div>
+  </div>
+  <!-- Weekly alert block -->
+  <div id="cl-week-alert" style="display:none;background:var(--red-light);border:1px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+    <div style="font-weight:700;color:var(--red);margin-bottom:10px">⚠️ Эти клиенты взяли меньше чем на прошлой неделе</div>
+    <div id="cl-week-alert-list"></div>
   </div>
   <div class="filters">
     <input type="text" class="filter-input" placeholder="🔍 Поиск по имени, магазину, телефону" id="cl-search" oninput="renderClients()" style="width:300px">
@@ -2040,11 +2050,45 @@ const withExch=clients.filter(c=>exchanges.some(e=>e.client_id===c.id&&!e.resolv
 setText('cl-total',clients.length);
 setText('cl-debt-cnt',withDebt);
 setText('cl-exch-cnt',withExch);
+// Weekly stats for all clients
+const weekStartFn=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
+const thisWeek=weekStartFn(today());
+const lastWeek=weekStartFn(new Date(new Date()-7*86400000).toISOString().split('T')[0]);
+const salePrice=parseFloat(settings.price)||0;
+const weekAlerts=clients.map(c=>{
+const cSales=sales.filter(s=>s.client_id===c.id&&s.payment!=='debt');
+const thisWkKg=cSales.filter(s=>weekStartFn(s.date)===thisWeek).reduce((a,s)=>a+s.qty,0);
+const lastWkKg=cSales.filter(s=>weekStartFn(s.date)===lastWeek).reduce((a,s)=>a+s.qty,0);
+if(lastWkKg>0&&thisWkKg<lastWkKg) return{...c,thisWkKg,lastWkKg,diff:lastWkKg-thisWkKg,missed:(lastWkKg-thisWkKg)*salePrice};
+return null;
+}).filter(Boolean).sort((a,b)=>b.missed-a.missed);
+// Render weekly alert block
+const alertBlock=document.getElementById('cl-week-alert');
+const alertList=document.getElementById('cl-week-alert-list');
+if(weekAlerts.length&&alertBlock&&alertList){
+alertBlock.style.display='block';
+setText('cl-less-cnt',weekAlerts.length);
+const totalMissed=weekAlerts.reduce((a,c)=>a+c.missed,0);
+setText('cl-less-sum',totalMissed?`~${fmt(Math.round(totalMissed))} ₸ потери`:'');
+alertList.innerHTML=weekAlerts.map(c=>`
+<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.2)">
+<div>
+<b>${c.name}</b>${c.shop?` / ${c.shop}`:''}
+<span style="font-size:11px;color:var(--red);margin-left:8px">↓ ${c.diff.toFixed(1)} ${unit()} меньше</span>
+</div>
+<div style="text-align:right;font-size:12px">
+<div>${fmt(c.lastWkKg)} → <b>${fmt(c.thisWkKg)}</b> ${unit()}</div>
+${c.missed?`<div style="color:var(--red)">~${fmt(Math.round(c.missed))} ₸</div>`:''}
+</div>
+</div>`).join('');
+} else {
+if(alertBlock) alertBlock.style.display='none';
+setText('cl-less-cnt','0');
+setText('cl-less-sum','');
+}
 const container=document.getElementById('clients-list');
 if(!list.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><p>Клиентов нет</p></div>';return;}
-const weekStart=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
-const thisWeek=weekStart(today());
-const lastWeek=weekStart(new Date(new Date()-7*86400000).toISOString().split('T')[0]);
+const weekStart=weekStartFn;
 container.innerHTML=list.map(c=>{
 const cSales=sales.filter(s=>s.client_id===c.id&&s.payment!=='debt');
 const totalRev=cSales.reduce((a,s)=>a+s.total,0);
@@ -2334,17 +2378,22 @@ const reason=document.getElementById('exch-reason').value||'';
 const date=document.getElementById('exch-date').value||today();
 const {error}=await db.from('biz_exchanges').insert({client_id,kg,amount,reason,date,resolved:false});
 if(error){toast('Ошибка','error');return;}
+await logHistory('create','biz_exchanges',`Обмен: ${clientName(client_id)} · ${kg} ${unit()}${amount?' · '+fmt(amount)+' ₸':''} · ${reason||'без причины'}`);
 await loadAll(); renderAll(); closeOverlay('exch-modal');
 ['exch-kg-inp','exch-amount','exch-reason'].forEach(i=>document.getElementById(i).value='');
 document.getElementById('exch-date').value=today();
 toast('Обмен добавлен ✓','success');
 }
 async function resolveExchange(id) {
+const e=exchanges.find(x=>x.id===id);
 await db.from('biz_exchanges').update({resolved:true}).eq('id',id);
+await logHistory('update','biz_exchanges',`Обмен выполнен: ${clientName(e?.client_id)} · ${e?.kg} ${unit()}`);
 await loadAll(); renderAll(); toast('Обмен выполнен ✓','success');
 }
 async function deleteExchange(id) {
 confirmDelete(async()=>{
+const e=exchanges.find(x=>x.id===id);
+await logHistory('delete','biz_exchanges',`Удалён обмен: ${clientName(e?.client_id)} · ${e?.kg} ${unit()}`, e);
 await db.from('biz_exchanges').delete().eq('id',id);
 await loadAll(); renderAll();
 });
@@ -2371,8 +2420,26 @@ tb.innerHTML=list.map(e=>`<tr>
 <td>${e.employee||'—'}</td>
 <td><b>${fmt(e.amount)} ₸</b></td>
 <td style="color:var(--text2)">${e.description||'—'}</td>
-<td><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteExpense('${e.id}')">🗑</button></td>
+<td style="display:flex;gap:4px">
+<button class="btn btn-ghost btn-sm btn-icon" onclick="editExpense('${e.id}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteExpense('${e.id}')">🗑</button>
+</td>
 </tr>`).join('');
+}
+function editExpense(id) {
+const e=expenses.find(x=>x.id===id); if(!e) return;
+document.getElementById('exp-amount').value=e.amount||'';
+document.getElementById('exp-date').value=e.date||today();
+document.getElementById('exp-desc').value=e.description||'';
+document.getElementById('exp-employee').value=e.employee||'';
+// Store edit id for save
+document.getElementById('exp-modal').dataset.editId=id;
+// Update button text
+const btn=document.querySelector('#exp-modal .btn-danger');
+if(btn) btn.textContent='💾 Сохранить изменения';
+openOverlay('exp-modal');
+// Set category after modal opens
+setTimeout(()=>{ const sel=document.getElementById('exp-cat'); if(sel) sel.value=e.category||''; },50);
 }
 async function saveExpense() { await withSaving(_saveExpense); }
 async function _saveExpense() {
@@ -2382,12 +2449,24 @@ const date=document.getElementById('exp-date').value||today();
 const description=document.getElementById('exp-desc').value||'';
 const employee=document.getElementById('exp-employee').value||'';
 if(!amount){toast('Укажите сумму','error');return;}
-const {error}=await db.from('biz_expenses').insert({category:cat,amount,date,description,employee});
+const editId=document.getElementById('exp-modal').dataset.editId||'';
+let error;
+if(editId){
+({error}=await db.from('biz_expenses').update({category:cat,amount,date,description,employee}).eq('id',editId));
+if(!error) await logHistory('update','biz_expenses',`Изменён расход: ${cat} · ${fmt(amount)} ₸`);
+} else {
+({error}=await db.from('biz_expenses').insert({category:cat,amount,date,description,employee}));
+if(!error) await logHistory('create','biz_expenses',`Расход: ${cat} · ${fmt(amount)} ₸${description?' · '+description:''}${employee?' · '+employee:''}`);
+}
 if(error){toast('Ошибка','error');return;}
+// Reset edit mode
+document.getElementById('exp-modal').dataset.editId='';
+const btn=document.querySelector('#exp-modal .btn-danger');
+if(btn) btn.textContent='Добавить';
 await loadAll(); renderAll(); closeOverlay('exp-modal');
 document.getElementById('exp-amount').value=''; document.getElementById('exp-desc').value='';
 document.getElementById('exp-employee').value=''; document.getElementById('exp-date').value=today();
-toast('Расход добавлен ✓','success');
+toast(editId?'Расход обновлён ✓':'Расход добавлен ✓','success');
 }
 async function deleteExpense(id) {
 confirmDelete(async()=>{
@@ -3418,6 +3497,7 @@ let error;
 if(editId)({error}=await db.from('biz_purchases').update(row).eq('id',editId));
 else({error}=await db.from('biz_purchases').insert(row));
 if(error){toast('Ошибка: '+error.message,'error');return;}
+await logHistory(editId?'update':'create','biz_purchases',`${editId?'Изменена':'Новая'} закупка: ${product||category} · ${qty} ${unit} · ${fmt(total)} ₸`);
 await loadAll(); renderAll(); closeOverlay('purchase-modal'); toast('Закупка сохранена ✓','success');
 }
 function exportPurchasesExcel() {
