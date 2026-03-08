@@ -722,6 +722,7 @@ tbody tr:hover { background:#fafbff; }
     <div class="page-header-left"><h1>Расходы</h1><p>Все затраты бизнеса</p></div>
     <div class="page-header-actions">
       <button class="btn btn-ghost btn-sm" onclick="exportExpensesExcel()">📥 Excel</button>
+      <button class="btn btn-warning btn-sm" onclick="openRecurringModal()">🔁 Постоянный расход</button>
       <button class="btn btn-danger" onclick="openExpenseModal()">+ Расход</button>
     </div>
   </div>
@@ -731,6 +732,16 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Этот год</div><div class="card-value" id="e-year">0 ₸</div></div>
     <div class="card"><div class="card-label">Записей</div><div class="card-value" id="e-cnt">0</div></div>
   </div>
+
+  <!-- Постоянные расходы -->
+  <div id="recurring-alert-block" style="display:none;margin-bottom:16px"></div>
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+    <span>🔁 Постоянные расходы</span>
+    <button class="btn btn-ghost btn-sm" onclick="toggleRecurringList()" id="recurring-toggle-btn">Скрыть</button>
+  </div>
+  <div id="recurring-list" style="margin-bottom:20px"></div>
+
+  <div class="section-label">Все расходы</div>
   <div class="filters">
     <input type="date" class="filter-input" id="ef-from" onchange="renderExpenses()">
     <span style="color:var(--text2);font-size:12px">—</span>
@@ -1534,6 +1545,90 @@ tbody tr:hover { background:#fafbff; }
       <button class="btn btn-ghost" onclick="closeOverlay('exp-modal')">Отмена</button>
       <button class="btn btn-danger" onclick="saveExpense()">Добавить</button>
     </div>
+</div>
+</div>
+
+<!-- Модал постоянного расхода -->
+<div class="overlay" id="recurring-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title" id="recurring-modal-title">🔁 Постоянный расход</div>
+      <button class="modal-close" onclick="closeOverlay('recurring-modal')">✕</button>
+    </div>
+    <input type="hidden" id="rec-edit-id">
+    <div class="form-group"><label class="form-label">Название</label>
+      <input type="text" class="form-input" id="rec-name" placeholder="Аренда, зарплата...">
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Сумма (₸)</label>
+        <input type="number" class="form-input" id="rec-amount" placeholder="0">
+      </div>
+      <div class="form-group"><label class="form-label">Категория</label>
+        <select class="form-select" id="rec-cat"></select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Период</label>
+        <select class="form-select" id="rec-period">
+          <option value="monthly">Ежемесячно</option>
+          <option value="weekly">Еженедельно</option>
+          <option value="yearly">Ежегодно</option>
+          <option value="custom">Свой (дней)</option>
+        </select>
+      </div>
+      <div class="form-group" id="rec-custom-days-group" style="display:none">
+        <label class="form-label">Каждые N дней</label>
+        <input type="number" class="form-input" id="rec-custom-days" placeholder="30" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">День оплаты (число месяца)</label>
+        <input type="number" class="form-input" id="rec-day" placeholder="1–31" min="1" max="31">
+      </div>
+      <div class="form-group"><label class="form-label">Напомнить за (дней)</label>
+        <input type="number" class="form-input" id="rec-remind" placeholder="3" min="0" max="30" value="3">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Заметка</label>
+      <input type="text" class="form-input" id="rec-note" placeholder="Необязательно">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeOverlay('recurring-modal')">Отмена</button>
+      <button class="btn btn-warning" id="rec-save-btn" onclick="saveRecurring()">💾 Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модал подтверждения оплаты постоянного расхода -->
+<div class="overlay" id="recurring-pay-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">✅ Оплата постоянного расхода</div>
+      <button class="modal-close" onclick="closeOverlay('recurring-pay-modal')">✕</button>
+    </div>
+    <input type="hidden" id="rp-recurring-id">
+    <div id="rp-info" style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:12px;font-size:14px"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Сумма оплаты (₸)</label>
+        <input type="number" class="form-input" id="rp-amount" placeholder="0">
+      </div>
+      <div class="form-group"><label class="form-label">Дата оплаты</label>
+        <input type="date" class="form-input" id="rp-date">
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Заметка</label>
+      <input type="text" class="form-input" id="rp-note" placeholder="Необязательно">
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input type="checkbox" id="rp-add-to-expenses" checked> 
+        <span style="font-size:13px">Добавить в расходы автоматически</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeOverlay('recurring-pay-modal')">Отмена</button>
+      <button class="btn btn-success" onclick="saveRecurringPay()">✅ Оплачено</button>
+    </div>
   </div>
 </div>
 
@@ -1573,7 +1668,7 @@ const SUPABASE_KEY = 'sb_publishable_zlfDYgzf7oIdXrfJG7327Q_O1gUQJTm';
 const {createClient} = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 let sales=[], productions=[], debts=[], debtPay=[], expenses=[], clients=[], exchanges=[], settings={};
-let invItems=[], invEntries=[], purchases=[], suppliers=[], expCategories=[], purCategories=[];
+let invItems=[], invEntries=[], purchases=[], suppliers=[], expCategories=[], purCategories=[], recurringExpenses=[], recurringPayments=[];
 let konusSales=[], konusPay=[];
 let recipeItems=[], historyLog=[];
 let qsPayMethod='cash';
@@ -1619,6 +1714,8 @@ db.from('biz_konus_payments').select('*').order('date',{ascending:false}),
 db.from('biz_recipe_items').select('*').order('name'),
 db.from('biz_history').select('*').order('created_at',{ascending:false}).limit(500),
 db.from('biz_pur_categories').select('*').order('name'),
+db.from('biz_recurring_expenses').select('*').order('name'),
+db.from('biz_recurring_payments').select('*').order('paid_date',{ascending:false}),
 ]);
 sales=results[0].data||[]; productions=results[1].data||[]; debts=results[2].data||[];
 debtPay=results[3].data||[]; expenses=results[4].data||[]; clients=results[5].data||[];
@@ -1627,6 +1724,8 @@ purchases=results[10].data||[]; suppliers=results[11].data||[]; expCategories=re
 konusSales=results[13].data||[]; konusPay=results[14].data||[];
 recipeItems=results[15].data||[]; historyLog=results[16].data||[];
 purCategories=results[17]?.data||[];
+recurringExpenses=results[18]?.data||[];
+recurringPayments=results[19]?.data||[];
 const s={}; (results[7].data||[]).forEach(x=>s[x.key]=x.value);
 settings=s; applySettings();
 }
@@ -1642,6 +1741,7 @@ renderDebts(); renderExchanges(); renderExpenses(); renderWarehouse();
 renderInventory(); renderPurchases(); renderSuppliers(); renderKonus();
 renderRecipe(); renderRentab(); filterHistory();
 renderExpCatSettings(); renderPurCatSettings(); renderTopClients();
+renderRecurring();
 populateSelects(); updateBadges();
 document.getElementById('dash-date-str').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 checkStockWarning();
@@ -2545,6 +2645,205 @@ await db.from('biz_expenses').delete().eq('id',id);
 await loadAll(); renderAll(); toast('Удалено','success');
 });
 }
+// ===== ПОСТОЯННЫЕ РАСХОДЫ =====
+let recurringListVisible = true;
+function toggleRecurringList() {
+recurringListVisible = !recurringListVisible;
+document.getElementById('recurring-list').style.display = recurringListVisible ? '' : 'none';
+document.getElementById('recurring-toggle-btn').textContent = recurringListVisible ? 'Скрыть' : 'Показать';
+}
+function getNextPayDate(r) {
+// Returns next expected payment date as string YYYY-MM-DD
+const t = today();
+const now = new Date(t);
+if(r.period === 'monthly' || r.period === 'custom' || !r.period) {
+const days = r.period === 'weekly' ? 7 : r.period === 'yearly' ? 365 : r.period === 'custom' ? (r.custom_days||30) : 30;
+// Find last payment
+const lastPay = recurringPayments.filter(p=>p.recurring_id===r.id).sort((a,b)=>b.paid_date>a.paid_date?1:-1)[0];
+if(!lastPay) {
+// No payments yet — use day_of_month if monthly
+if(r.period==='monthly' && r.day_of_month) {
+const d = new Date(now.getFullYear(), now.getMonth(), r.day_of_month);
+if(d < now) d.setMonth(d.getMonth()+1);
+return d.toISOString().split('T')[0];
+}
+return t;
+}
+const next = new Date(lastPay.paid_date);
+if(r.period==='monthly' && r.day_of_month) {
+next.setMonth(next.getMonth()+1);
+next.setDate(r.day_of_month);
+} else if(r.period==='yearly') {
+next.setFullYear(next.getFullYear()+1);
+} else {
+next.setDate(next.getDate()+days);
+}
+return next.toISOString().split('T')[0];
+}
+if(r.period === 'weekly') {
+const lastPay = recurringPayments.filter(p=>p.recurring_id===r.id).sort((a,b)=>b.paid_date>a.paid_date?1:-1)[0];
+if(!lastPay) return t;
+const next = new Date(lastPay.paid_date);
+next.setDate(next.getDate()+7);
+return next.toISOString().split('T')[0];
+}
+return t;
+}
+function getDaysUntil(dateStr) {
+const now = new Date(today());
+const d = new Date(dateStr);
+return Math.round((d-now)/(1000*60*60*24));
+}
+function renderRecurring() {
+const list = document.getElementById('recurring-list');
+const alertBlock = document.getElementById('recurring-alert-block');
+if(!list) return;
+if(!recurringExpenses.length) {
+list.innerHTML = `<div class="empty-state" style="padding:20px"><div class="empty-icon">🔁</div><p>Постоянных расходов нет — нажмите "🔁 Постоянный расход" чтобы добавить</p></div>`;
+if(alertBlock) alertBlock.style.display='none';
+return;
+}
+const alerts = [];
+list.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:8px">` +
+recurringExpenses.filter(r=>r.is_active!==false).map(r=>{
+const nextDate = getNextPayDate(r);
+const daysLeft = getDaysUntil(nextDate);
+const lastPay = recurringPayments.filter(p=>p.recurring_id===r.id).sort((a,b)=>b.paid_date>a.paid_date?1:-1)[0];
+const remind = r.remind_days ?? 3;
+const isOverdue = daysLeft < 0;
+const isDueSoon = daysLeft >= 0 && daysLeft <= remind;
+const statusColor = isOverdue ? 'var(--red)' : isDueSoon ? 'var(--yellow)' : 'var(--green)';
+const statusText = isOverdue ? `⚠️ Просрочено на ${Math.abs(daysLeft)} дн.` : isDueSoon ? `🔔 Через ${daysLeft} дн.` : `✅ Через ${daysLeft} дн.`;
+const periodLabel = r.period==='monthly'?'Ежемесячно':r.period==='weekly'?'Еженедельно':r.period==='yearly'?'Ежегодно':`Каждые ${r.custom_days||30} дн.`;
+if(isOverdue||isDueSoon) alerts.push({...r, daysLeft, nextDate});
+return `<div style="background:var(--card);border:1px solid ${isOverdue?'var(--red)':isDueSoon?'var(--yellow)':'var(--border)'};border-radius:12px;padding:14px">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+<div>
+<div style="font-weight:700;font-size:15px">${r.name}</div>
+<div style="font-size:12px;color:var(--text2)">${r.category||''} · ${periodLabel}</div>
+</div>
+<div style="text-align:right">
+<div style="font-weight:700;font-size:16px;color:var(--red)">${fmt(r.amount)} ₸</div>
+<div style="font-size:11px;color:${statusColor};font-weight:600">${statusText}</div>
+</div>
+</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+Следующая оплата: <b>${dateStr(nextDate)}</b>
+${lastPay?`<br>Последняя: ${dateStr(lastPay.paid_date)}`:'<br><i>Ещё не оплачивалось</i>'}
+${r.note?`<br>${r.note}`:''}
+</div>
+<div style="display:flex;gap:6px">
+<button class="btn btn-success btn-sm" style="flex:1" onclick="openRecurringPayModal('${r.id}')">✅ Оплачено</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="openRecurringModal('${r.id}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteRecurring('${r.id}')" title="Удалить">🗑</button>
+</div>
+</div>`;
+}).join('') + `</div>`;
+// Alert block
+if(alertBlock) {
+if(alerts.length) {
+alertBlock.style.display = 'block';
+alertBlock.innerHTML = `<div style="background:var(--yellow-light);border:1px solid var(--yellow);border-radius:12px;padding:12px 16px">
+<div style="font-weight:700;color:var(--yellow);margin-bottom:6px">🔔 Требуют внимания</div>
+${alerts.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0">
+<span>${a.name} ${a.daysLeft<0?'<b style="color:var(--red)">просрочено на '+Math.abs(a.daysLeft)+' дн.</b>':'через <b>'+a.daysLeft+' дн.</b>'}</span>
+<span style="font-weight:700">${fmt(a.amount)} ₸</span>
+</div>`).join('')}
+</div>`;
+} else {
+alertBlock.style.display = 'none';
+}
+}
+}
+function openRecurringModal(id='') {
+document.getElementById('rec-edit-id').value = id;
+document.getElementById('recurring-modal-title').textContent = id ? '✏️ Редактировать' : '🔁 Постоянный расход';
+document.getElementById('rec-save-btn').textContent = id ? '💾 Сохранить' : '💾 Добавить';
+if(id) {
+const r = recurringExpenses.find(x=>x.id===id); if(!r) return;
+document.getElementById('rec-name').value = r.name||'';
+document.getElementById('rec-amount').value = r.amount||'';
+document.getElementById('rec-period').value = r.period||'monthly';
+document.getElementById('rec-day').value = r.day_of_month||'';
+document.getElementById('rec-remind').value = r.remind_days??3;
+document.getElementById('rec-note').value = r.note||'';
+document.getElementById('rec-custom-days').value = r.custom_days||'';
+document.getElementById('rec-custom-days-group').style.display = r.period==='custom'?'':'none';
+setTimeout(()=>{ const s=document.getElementById('rec-cat'); if(s) s.value=r.category||''; },50);
+} else {
+['rec-name','rec-amount','rec-day','rec-note','rec-custom-days'].forEach(i=>{const el=document.getElementById(i);if(el)el.value='';});
+document.getElementById('rec-remind').value = '3';
+document.getElementById('rec-period').value = 'monthly';
+document.getElementById('rec-custom-days-group').style.display = 'none';
+}
+buildExpCategoryOptions('rec-cat');
+openOverlay('recurring-modal');
+}
+function openRecurringPayModal(id) {
+const r = recurringExpenses.find(x=>x.id===id); if(!r) return;
+document.getElementById('rp-recurring-id').value = id;
+document.getElementById('rp-amount').value = r.amount||'';
+document.getElementById('rp-date').value = today();
+document.getElementById('rp-note').value = '';
+const nextDate = getNextPayDate(r);
+const daysLeft = getDaysUntil(nextDate);
+document.getElementById('rp-info').innerHTML = `
+<div style="font-size:16px;font-weight:700;margin-bottom:4px">${r.name}</div>
+<div style="color:var(--text2);font-size:13px">${r.category||''} · Ожидалась: <b>${dateStr(nextDate)}</b> ${daysLeft<0?'<span style="color:var(--red)">(просрочено на '+Math.abs(daysLeft)+' дн.)</span>':''}</div>`;
+openOverlay('recurring-pay-modal');
+}
+async function saveRecurring() {
+const id = document.getElementById('rec-edit-id').value;
+const name = document.getElementById('rec-name').value.trim();
+const amount = parseFloat(document.getElementById('rec-amount').value)||0;
+const category = document.getElementById('rec-cat').value;
+const period = document.getElementById('rec-period').value;
+const day_of_month = parseInt(document.getElementById('rec-day').value)||null;
+const remind_days = parseInt(document.getElementById('rec-remind').value)??3;
+const note = document.getElementById('rec-note').value.trim();
+const custom_days = parseInt(document.getElementById('rec-custom-days').value)||null;
+if(!name){toast('Укажите название','error');return;}
+if(!amount){toast('Укажите сумму','error');return;}
+const row = {name, amount, category, period, day_of_month, remind_days, note, custom_days, is_active:true};
+let error;
+if(id) ({error}=await db.from('biz_recurring_expenses').update(row).eq('id',id));
+else ({error}=await db.from('biz_recurring_expenses').insert(row));
+if(error){toast('Ошибка: '+error.message,'error');return;}
+await loadAll(); renderAll(); closeOverlay('recurring-modal');
+toast(id?'Обновлено ✓':'Постоянный расход добавлен ✓','success');
+}
+async function saveRecurringPay() {
+const recurring_id = document.getElementById('rp-recurring-id').value;
+const amount = parseFloat(document.getElementById('rp-amount').value)||0;
+const paid_date = document.getElementById('rp-date').value||today();
+const note = document.getElementById('rp-note').value.trim();
+const addToExp = document.getElementById('rp-add-to-expenses').checked;
+if(!amount){toast('Укажите сумму','error');return;}
+const {error} = await db.from('biz_recurring_payments').insert({recurring_id, amount, paid_date, note});
+if(error){toast('Ошибка','error');return;}
+// Optionally add to regular expenses
+if(addToExp) {
+const r = recurringExpenses.find(x=>x.id===recurring_id);
+await db.from('biz_expenses').insert({category:r?.category||r?.name||'Постоянный расход', amount, date:paid_date, description:r?.name+(note?' · '+note:''), employee:''});
+}
+await logHistory('create','biz_recurring_payments',`Оплата: ${recurringExpenses.find(x=>x.id===recurring_id)?.name} · ${fmt(amount)} ₸`);
+await loadAll(); renderAll(); closeOverlay('recurring-pay-modal');
+toast('Оплата зафиксирована ✓','success');
+}
+async function deleteRecurring(id) {
+confirmDelete(async()=>{
+const r = recurringExpenses.find(x=>x.id===id);
+await db.from('biz_recurring_expenses').delete().eq('id',id);
+await logHistory('delete','biz_recurring_expenses',`Удалён постоянный расход: ${r?.name}`);
+await loadAll(); renderAll(); toast('Удалено','success');
+});
+}
+// Toggle custom days field
+document.addEventListener('change', e=>{
+if(e.target.id==='rec-period') {
+document.getElementById('rec-custom-days-group').style.display = e.target.value==='custom' ? '' : 'none';
+}
+});
 function clearExpFilters() {
 ['ef-from','ef-to'].forEach(id=>document.getElementById(id).value='');
 document.getElementById('ef-cat').value='';
