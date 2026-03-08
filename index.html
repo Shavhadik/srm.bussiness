@@ -522,11 +522,31 @@ tbody tr:hover { background:#fafbff; }
   <div class="cards" id="dash-cards">
     <div class="card"><div class="card-icon" style="background:#e0f2fe">💰</div><div class="card-label">Выручка сегодня</div><div class="card-value green" id="dc-today">0 ₸</div><div class="card-sub" id="dc-today-count"></div></div>
     <div class="card"><div class="card-icon" style="background:#d1fae5">📅</div><div class="card-label">Выручка за месяц</div><div class="card-value" id="dc-month">0 ₸</div><div class="card-sub" id="dc-month-name"></div></div>
+    <div class="card"><div class="card-icon" style="background:#e0f2fe">📊</div><div class="card-label">Средний чек</div><div class="card-value" id="dc-avg-check">0 ₸</div><div class="card-sub" id="dc-avg-check-sub"></div></div>
     <div class="card" onclick="goPage('debts')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">📋</div><div class="card-label">Долги клиентов</div><div class="card-value" style="color:var(--yellow)" id="dc-debts">0 ₸</div><div class="card-sub" id="dc-debts-count"></div></div>
     <div class="card" onclick="goPage('konus')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">🔺</div><div class="card-label">Конусы (активных)</div><div class="card-value" style="color:var(--yellow)" id="dc-konus">0 ₸</div><div class="card-sub" id="dc-konus-count"></div></div>
     <div class="card"><div class="card-icon" style="background:#ede9fe">📦</div><div class="card-label">Остаток склада</div><div class="card-value" id="dc-stock">0 кг</div><div class="card-sub">пряников</div></div>
     <div class="card"><div class="card-icon" style="background:#fee2e2">💸</div><div class="card-label">Расходы месяц</div><div class="card-value" style="color:var(--red)" id="dc-exp">0 ₸</div></div>
     <div class="card"><div class="card-icon" style="background:#d1fae5">📈</div><div class="card-label">Прибыль месяц</div><div class="card-value" id="dc-profit">0 ₸</div></div>
+  </div>
+
+  <!-- Неделя vs прошлая неделя -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+    <div class="card" style="border-left:3px solid var(--accent)">
+      <div class="card-label">⚡ Эта неделя</div>
+      <div class="card-value" id="dc-week-rev" style="font-size:20px">0 ₸</div>
+      <div class="card-sub" id="dc-week-sub"></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--border)">
+      <div class="card-label">Прошлая неделя</div>
+      <div class="card-value" id="dc-lastweek-rev" style="font-size:20px;color:var(--text2)">0 ₸</div>
+      <div class="card-sub" id="dc-lastweek-sub"></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--green)">
+      <div class="card-label">🏆 Лучший день недели</div>
+      <div class="card-value" id="dc-best-day" style="font-size:18px">—</div>
+      <div class="card-sub" id="dc-best-day-sub"></div>
+    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px" class="chart-row">
@@ -671,7 +691,7 @@ tbody tr:hover { background:#fafbff; }
   <div class="section-label" style="margin-top:24px">История оплат по конусам</div>
   <div class="table-card">
     <div class="table-wrap"><table>
-      <thead><tr><th>Дата оплаты</th><th>Клиент</th><th>Оплатил за партию</th><th>Сумма оплаты</th><th>Остаток</th><th>Заметка</th></tr></thead>
+      <thead><tr><th>Дата оплаты</th><th>Клиент</th><th>Оплатил за партию</th><th>Сумма оплаты</th><th>Остаток</th><th>Заметка</th><th></th></tr></thead>
       <tbody id="konus-hist-tb"></tbody>
     </table></div>
   </div>
@@ -1748,6 +1768,46 @@ const activeKonus=konusSales.filter(k=>k.remaining>0);
 const totalKonus=activeKonus.reduce((a,k)=>a+k.remaining,0);
 setText('dc-konus', fmt(totalKonus)+' ₸');
 setText('dc-konus-count', activeKonus.length+' конусов');
+// Средний чек
+const paidSales=sales.filter(s=>s.payment!=='debt'&&s.payment!=='konus');
+const monthPaidSales=paidSales.filter(s=>s.date?.startsWith(m));
+const avgMonth=monthPaidSales.length?Math.round(monthPaidSales.reduce((a,s)=>a+s.total,0)/monthPaidSales.length):0;
+const avgToday=todaySales.length?Math.round(todaySales.reduce((a,s)=>a+s.total,0)/todaySales.length):0;
+setText('dc-avg-check', fmt(avgMonth)+' ₸');
+setText('dc-avg-check-sub', avgToday?`Сегодня: ${fmt(avgToday)} ₸`:`${monthPaidSales.length} продаж за месяц`);
+// Эта неделя vs прошлая
+const now=new Date();
+const dow=now.getDay()===0?6:now.getDay()-1;
+const wStart=new Date(now); wStart.setDate(now.getDate()-dow);
+const wStartStr=wStart.toISOString().split('T')[0];
+const lwStart=new Date(wStart); lwStart.setDate(wStart.getDate()-7);
+const lwStartStr=lwStart.toISOString().split('T')[0];
+const thisWkSales=paidSales.filter(s=>s.date>=wStartStr&&s.date<=t);
+const lastWkSales=paidSales.filter(s=>s.date>=lwStartStr&&s.date<wStartStr);
+const thisWkRev=thisWkSales.reduce((a,s)=>a+s.total,0);
+const lastWkRev=lastWkSales.reduce((a,s)=>a+s.total,0);
+const thisWkKg=thisWkSales.reduce((a,s)=>a+s.qty,0);
+const lastWkKg=lastWkSales.reduce((a,s)=>a+s.qty,0);
+const weekDiff=lastWkRev>0?Math.round((thisWkRev-lastWkRev)/lastWkRev*100):null;
+setText('dc-week-rev', fmt(thisWkRev)+' ₸');
+setText('dc-week-sub', `${thisWkSales.length} продаж · ${fmt(thisWkKg)} ${unit()}${weekDiff!==null?' · '+(weekDiff>=0?'📈 +':'📉 ')+weekDiff+'%':''}`);
+setText('dc-lastweek-rev', fmt(lastWkRev)+' ₸');
+setText('dc-lastweek-sub', `${lastWkSales.length} продаж · ${fmt(lastWkKg)} ${unit()}`);
+// Лучший день недели (по истории всех продаж)
+const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const dayTotals=[0,0,0,0,0,0,0];
+const dayCounts=[0,0,0,0,0,0,0];
+paidSales.forEach(s=>{
+if(!s.date) return;
+const d=new Date(s.date);
+const di=d.getDay()===0?6:d.getDay()-1;
+dayTotals[di]+=s.total;
+dayCounts[di]++;
+});
+const bestDayIdx=dayTotals.indexOf(Math.max(...dayTotals));
+const bestAvg=dayCounts[bestDayIdx]>0?Math.round(dayTotals[bestDayIdx]/dayCounts[bestDayIdx]):0;
+setText('dc-best-day', dayNames[bestDayIdx]||'—');
+setText('dc-best-day-sub', bestAvg?`~${fmt(bestAvg)} ₸ в среднем`:'Недостаточно данных');
 const last=sales.filter(s=>s.date===t).slice(0,10);
 const tb=document.getElementById('dash-sales-tb');
 if(!last.length){tb.innerHTML='<tr><td colspan="6" class="empty-state"><div class="empty-icon">💰</div><p>Продаж сегодня ещё нет</p></td></tr>';return;}
@@ -2631,7 +2691,7 @@ else list.innerHTML=active.map(k=>`
 </div>
 </div>`).join('');
 const tb=document.getElementById('konus-hist-tb');
-if(!konusPay.length){tb.innerHTML='<tr><td colspan="6" class="empty-state">Оплат нет</td></tr>';return;}
+if(!konusPay.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Оплат нет</td></tr>';return;}
 tb.innerHTML=konusPay.map(p=>{
 const k=konusSales.find(x=>x.id===p.konus_id)||{};
 return `<tr>
@@ -2641,8 +2701,19 @@ return `<tr>
 <td><span class="badge badge-green">${fmt(p.amount)} ₸</span></td>
 <td>${fmt(Math.max(0,k.remaining||0))} ₸</td>
 <td style="color:var(--text2)">${p.note||'—'}</td>
+<td><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteKonusPay('${p.id}')" title="Отменить оплату">↩️</button></td>
 </tr>`;
 }).join('');
+}
+async function deleteKonusPay(id) {
+confirmDelete(async()=>{
+const p=konusPay.find(x=>x.id===id); if(!p) return;
+const k=konusSales.find(x=>x.id===p.konus_id);
+if(k) await db.from('biz_konus').update({remaining:k.remaining+p.amount}).eq('id',k.id);
+await db.from('biz_konus_payments').delete().eq('id',id);
+await logHistory('delete','biz_konus_payments',`Отменена оплата конуса: ${clientName(p.client_id)} · ${fmt(p.amount)} ₸`);
+await loadAll(); renderAll(); toast('Оплата конуса отменена ✓','success');
+},'Отменить эту оплату? Остаток конуса будет восстановлен.');
 }
 function openKonusPayModal() {
 const active = konusSales.filter(k=>k.remaining>0);
