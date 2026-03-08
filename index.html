@@ -1648,7 +1648,10 @@ checkStockWarning();
 }
 function renderExpCatSettings() {
 const el=document.getElementById('exp-categories-list'); if(!el) return;
-if(!expCategories.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Нет пользовательских категорий.</div>';return;}
+if(!expCategories.length){
+el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Нет категорий — добавьте ниже.</div>';
+return;
+}
 el.innerHTML=expCategories.map(c=>`
 <div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:4px 10px;margin:3px;font-size:12px" id="expcat-${c.id}">
 <span id="expcat-lbl-${c.id}">${c.name}</span>
@@ -1703,6 +1706,12 @@ await loadAll();
 if(!checkLogin()) {
 document.getElementById('loadingOverlay').classList.add('hidden');
 return;
+}
+// Seed default expense categories if none exist
+if(expCategories.length===0) {
+const defaults=['Аренда','Зарплата','Сырьё','Упаковка','Транспорт','Коммунальные','Налог','Реклама','Другое'];
+await db.from('biz_exp_categories').insert(defaults.map(name=>({name})));
+await loadAll();
 }
 setDefaultDates();
 renderAll();
@@ -3648,11 +3657,9 @@ await loadAll(); renderAll(); closeOverlay('supplier-modal'); toast('Поста�
 }
 function buildExpCategoryOptions(selectId) {
 const el=document.getElementById(selectId); if(!el) return;
-const defaults=['Аренда','Зарплата','Сырьё','Мука','Сахар','Масло','Яйца','Упаковка','Транспорт','Коммунальные','Налог','Реклама','Личные расходы сотрудника','Другое'];
-const custom=expCategories.map(c=>c.name);
-const all=[...new Set([...defaults,...custom])].sort();
+const all=expCategories.map(c=>c.name).sort();
 const curVal=el.value;
-el.innerHTML=all.map(c=>`<option value="${c}">${c}</option>`).join('');
+el.innerHTML=(all.length?all:['Другое']).map(c=>`<option value="${c}">${c}</option>`).join('');
 if(curVal) el.value=curVal;
 }
 async function addExpCategory(name) {
