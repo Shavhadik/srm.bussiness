@@ -749,8 +749,54 @@ tbody tr:hover { background:#fafbff; }
     <select class="filter-input" id="ef-cat" onchange="renderExpenses()">
       <option value="">Все категории</option>
     </select>
+    <select class="filter-input" id="ef-emp" onchange="renderExpenses()">
+      <option value="">Все сотрудники</option>
+    </select>
     <button class="btn btn-ghost btn-sm" onclick="clearExpFilters()">Сбросить</button>
   </div>
+
+  <!-- Статистика по категориям -->
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+    <span>📊 По категориям</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-ghost btn-sm exp-stat-period" data-p="today" onclick="setExpStatPeriod('today')">День</button>
+      <button class="btn btn-ghost btn-sm exp-stat-period" data-p="week" onclick="setExpStatPeriod('week')">Неделя</button>
+      <button class="btn btn-primary btn-sm exp-stat-period" data-p="month" onclick="setExpStatPeriod('month')">Месяц</button>
+      <button class="btn btn-ghost btn-sm exp-stat-period" data-p="quarter" onclick="setExpStatPeriod('quarter')">Квартал</button>
+      <button class="btn btn-ghost btn-sm exp-stat-period" data-p="custom" onclick="setExpStatPeriod('custom')">Свой</button>
+    </div>
+  </div>
+  <div id="exp-stat-custom-dates" style="display:none;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap" class="filters">
+    <input type="date" class="filter-input" id="esp-from" onchange="renderExpStatCat()">
+    <span style="color:var(--text2);font-size:12px">—</span>
+    <input type="date" class="filter-input" id="esp-to" onchange="renderExpStatCat()">
+  </div>
+  <div id="exp-stat-cat" style="margin-bottom:20px"></div>
+
+  <!-- Статистика по сотрудникам -->
+  <div class="section-label" style="display:flex;justify-content:space-between;align-items:center">
+    <span>👤 Расходы по сотрудникам</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <select class="filter-input" id="emp-stat-select" onchange="renderExpStatEmp()" style="height:32px;font-size:13px">
+        <option value="">Все сотрудники</option>
+      </select>
+      <select class="filter-input" id="emp-stat-period" onchange="renderExpStatEmp()" style="height:32px;font-size:13px">
+        <option value="month">Этот месяц</option>
+        <option value="week">Эта неделя</option>
+        <option value="quarter">Квартал</option>
+        <option value="year">Этот год</option>
+        <option value="all">Всё время</option>
+        <option value="custom">Свой период</option>
+      </select>
+    </div>
+  </div>
+  <div id="emp-stat-custom-dates" style="display:none;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap" class="filters">
+    <input type="date" class="filter-input" id="emp-from" onchange="renderExpStatEmp()">
+    <span style="color:var(--text2);font-size:12px">—</span>
+    <input type="date" class="filter-input" id="emp-to" onchange="renderExpStatEmp()">
+  </div>
+  <div id="exp-stat-emp" style="margin-bottom:20px"></div>
+
   <div class="table-card">
     <div class="table-wrap"><table>
       <thead><tr><th>Дата</th><th>Категория</th><th>Сотрудник</th><th>Сумма</th><th>Описание</th><th></th></tr></thead>
@@ -2568,19 +2614,169 @@ await loadAll(); renderAll();
 });
 }
 function openExpenseModal() { openOverlay('exp-modal'); }
+let expStatPeriod = 'month';
+function setExpStatPeriod(p) {
+expStatPeriod = p;
+document.querySelectorAll('.exp-stat-period').forEach(b=>{
+b.className = b.dataset.p===p ? 'btn btn-primary btn-sm exp-stat-period' : 'btn btn-ghost btn-sm exp-stat-period';
+});
+document.getElementById('exp-stat-custom-dates').style.display = p==='custom' ? 'flex' : 'none';
+renderExpStatCat();
+}
+function getExpStatRange() {
+const t = today();
+const now = new Date(t);
+if(expStatPeriod==='today') return {from:t, to:t};
+if(expStatPeriod==='week') {
+const dow = now.getDay()===0?6:now.getDay()-1;
+const wStart = new Date(now); wStart.setDate(now.getDate()-dow);
+return {from:wStart.toISOString().split('T')[0], to:t};
+}
+if(expStatPeriod==='month') return {from:thisMonth()+'-01', to:t};
+if(expStatPeriod==='quarter') {
+const qStart = new Date(now); qStart.setMonth(Math.floor(now.getMonth()/3)*3, 1);
+return {from:qStart.toISOString().split('T')[0], to:t};
+}
+if(expStatPeriod==='custom') {
+return {from:document.getElementById('esp-from')?.value||thisMonth()+'-01', to:document.getElementById('esp-to')?.value||t};
+}
+return {from:thisMonth()+'-01', to:t};
+}
+function getEmpStatRange() {
+const t = today();
+const now = new Date(t);
+const p = document.getElementById('emp-stat-period')?.value||'month';
+document.getElementById('emp-stat-custom-dates').style.display = p==='custom'?'flex':'none';
+if(p==='week') {
+const dow = now.getDay()===0?6:now.getDay()-1;
+const wStart = new Date(now); wStart.setDate(now.getDate()-dow);
+return {from:wStart.toISOString().split('T')[0], to:t};
+}
+if(p==='month') return {from:thisMonth()+'-01', to:t};
+if(p==='quarter') {
+const qStart = new Date(now); qStart.setMonth(Math.floor(now.getMonth()/3)*3, 1);
+return {from:qStart.toISOString().split('T')[0], to:t};
+}
+if(p==='year') return {from:thisYear()+'-01-01', to:t};
+if(p==='all') return {from:'2000-01-01', to:t};
+if(p==='custom') {
+return {from:document.getElementById('emp-from')?.value||thisMonth()+'-01', to:document.getElementById('emp-to')?.value||t};
+}
+return {from:thisMonth()+'-01', to:t};
+}
+function renderExpStatCat() {
+const {from, to} = getExpStatRange();
+const el = document.getElementById('exp-stat-cat'); if(!el) return;
+const filtered = expenses.filter(e=>e.date>=from && e.date<=to);
+if(!filtered.length) {
+el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px">Нет расходов за период</div>';
+return;
+}
+const total = filtered.reduce((a,e)=>a+e.amount,0);
+const byCategory = {};
+filtered.forEach(e=>{
+const cat = e.category||'Без категории';
+byCategory[cat] = (byCategory[cat]||0) + e.amount;
+});
+const sorted = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
+el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">
+<div style="display:flex;justify-content:space-between;margin-bottom:12px">
+<span style="font-size:13px;color:var(--text2)">${dateStr(from)} — ${dateStr(to)}</span>
+<b style="color:var(--red)">${fmt(total)} ₸ всего</b>
+</div>
+${sorted.map(([cat,sum])=>{
+const pct = Math.round(sum/total*100);
+return `<div style="margin-bottom:10px">
+<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+<span><span class="badge badge-red">${cat}</span></span>
+<span><b>${fmt(sum)} ₸</b> <span style="color:var(--text2);font-size:11px">${pct}%</span></span>
+</div>
+<div style="background:var(--bg);border-radius:100px;height:6px;overflow:hidden">
+<div style="background:var(--red);height:100%;width:${pct}%;border-radius:100px;transition:width 0.3s"></div>
+</div>
+</div>`;
+}).join('')}
+</div>`;
+}
+function renderExpStatEmp() {
+const {from, to} = getEmpStatRange();
+const el = document.getElementById('exp-stat-emp'); if(!el) return;
+const selEmp = document.getElementById('emp-stat-select')?.value||'';
+// Build employee list
+const allEmps = [...new Set(expenses.filter(e=>e.employee).map(e=>e.employee))].sort();
+// Populate select
+const empSel = document.getElementById('emp-stat-select');
+if(empSel) {
+const cur = empSel.value;
+empSel.innerHTML = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
+empSel.value = cur;
+}
+const filtered = expenses.filter(e=>e.date>=from && e.date<=to && e.employee && (selEmp?e.employee===selEmp:true));
+if(!filtered.length) {
+el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:8px">Нет расходов по сотрудникам за период</div>';
+return;
+}
+const byEmp = {};
+filtered.forEach(e=>{
+if(!byEmp[e.employee]) byEmp[e.employee] = {total:0, items:[]};
+byEmp[e.employee].total += e.amount;
+byEmp[e.employee].items.push(e);
+});
+const sorted = Object.entries(byEmp).sort((a,b)=>b[1].total-a[1].total);
+el.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">` +
+sorted.map(([emp,data])=>{
+const byCat = {};
+data.items.forEach(e=>{ const c=e.category||'Прочее'; byCat[c]=(byCat[c]||0)+e.amount; });
+const catsSorted = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+<div style="font-weight:700;font-size:15px">👤 ${emp}</div>
+<div style="font-weight:700;font-size:16px;color:var(--red)">${fmt(data.total)} ₸</div>
+</div>
+<div style="font-size:12px;color:var(--text2);margin-bottom:8px">${dateStr(from)} — ${dateStr(to)} · ${data.items.length} записей</div>
+<div style="border-top:1px solid var(--border);padding-top:8px">
+${catsSorted.map(([cat,sum])=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">
+<span style="color:var(--text2)">${cat}</span><span><b>${fmt(sum)} ₸</b></span>
+</div>`).join('')}
+</div>
+<div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+<div style="font-size:11px;color:var(--text2)">Детали:</div>
+<div style="max-height:120px;overflow-y:auto;margin-top:4px">
+${data.items.slice(0,10).map(e=>`<div style="font-size:11px;padding:2px 0;border-bottom:1px solid var(--bg);display:flex;justify-content:space-between">
+<span>${dateStr(e.date)} · ${e.description||e.category}</span>
+<span style="font-weight:600;color:var(--red)">${fmt(e.amount)} ₸</span>
+</div>`).join('')}
+${data.items.length>10?`<div style="font-size:11px;color:var(--text2);padding-top:4px">+ ещё ${data.items.length-10} записей</div>`:''}
+</div>
+</div>
+</div>`;
+}).join('') + `</div>`;
+}
 function renderExpenses() {
 const t=today(), m=thisMonth(), y=thisYear();
 const from=document.getElementById('ef-from')?.value;
 const to=document.getElementById('ef-to')?.value;
 const cat=document.getElementById('ef-cat')?.value||'';
+const emp=document.getElementById('ef-emp')?.value||'';
 let list=expenses;
 if(from) list=list.filter(e=>e.date>=from);
 if(to) list=list.filter(e=>e.date<=to);
 if(cat) list=list.filter(e=>e.category===cat);
+if(emp) list=list.filter(e=>e.employee===emp);
 setText('e-today',fmt(expenses.filter(e=>e.date===t).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-month',fmt(expenses.filter(e=>e.date?.startsWith(m)).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-year',fmt(expenses.filter(e=>e.date?.startsWith(y)).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-cnt',expenses.length);
+// Populate employee filter
+const empFilter = document.getElementById('ef-emp');
+if(empFilter) {
+const cur = empFilter.value;
+const allEmps = [...new Set(expenses.filter(e=>e.employee).map(e=>e.employee))].sort();
+empFilter.innerHTML = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
+empFilter.value = cur;
+}
+renderExpStatCat();
+renderExpStatEmp();
 const tb=document.getElementById('exp-tb');
 if(!list.length){tb.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div><p>Расходов нет</p></div></td></tr>';return;}
 tb.innerHTML=list.map(e=>`<tr>
