@@ -870,13 +870,17 @@ tbody tr:hover { background:#fafbff; }
     </div>
     <input type="hidden" id="ri-edit-id">
     <div class="form-group"><label class="form-label">Название ингредиента</label>
-      <input type="text" class="form-input" id="ri-name" placeholder="Мука, Сахар, Масло...">
+      <input type="text" class="form-input" id="ri-name" placeholder="Мука, Сахар, Масло..." oninput="suggestRiFromPurchase()">
+    </div>
+    <div class="form-group" id="ri-purchase-suggest" style="display:none">
+      <label class="form-label">📦 Найдено в закупках — выбери для автозаполнения цены:</label>
+      <div id="ri-purchase-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Граммов на 1 кг товара</label>
         <input type="number" class="form-input" id="ri-grams" placeholder="0" step="0.1" oninput="calcRiCost()">
       </div>
-      <div class="form-group"><label class="form-label">Цена за кг (₸) — вручную</label>
+      <div class="form-group"><label class="form-label">Цена за кг (₸)</label>
         <input type="number" class="form-input" id="ri-price" placeholder="Авто из закупок" oninput="calcRiCost()">
       </div>
     </div>
@@ -955,11 +959,7 @@ tbody tr:hover { background:#fafbff; }
     <input type="hidden" id="pur-edit-id">
     <div class="form-row">
       <div class="form-group"><label class="form-label">Категория</label>
-        <select class="form-select" id="pur-cat-inp">
-          <option>Мука</option><option>Сахар</option><option>Масло</option>
-          <option>Яйца</option><option>Упаковка</option><option>Специи</option>
-          <option>Красители</option><option>Дрожжи</option><option>Другое сырьё</option>
-        </select>
+        <select class="form-select" id="pur-cat-inp"></select>
       </div>
       <div class="form-group"><label class="form-label">Продукт</label>
         <input type="text" class="form-input" id="pur-product" placeholder="Мука пшеничная в/с">
@@ -1169,6 +1169,12 @@ tbody tr:hover { background:#fafbff; }
     <div style="display:flex;gap:8px;margin-bottom:20px">
       <input type="text" class="form-input" id="new-exp-cat" placeholder="Новая категория..." style="flex:1">
       <button class="btn btn-primary btn-sm" onclick="addExpCategory(document.getElementById('new-exp-cat').value);document.getElementById('new-exp-cat').value=''">+ Добавить</button>
+    </div>
+    <div class="section-label">Категории закупок</div>
+    <div id="pur-categories-list" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:8px;margin-bottom:20px">
+      <input type="text" class="form-input" id="new-pur-cat" placeholder="Новая категория закупки..." style="flex:1">
+      <button class="btn btn-primary btn-sm" onclick="addPurCategory(document.getElementById('new-pur-cat').value);document.getElementById('new-pur-cat').value=''">+ Добавить</button>
     </div>
     <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
   </div>
@@ -1528,7 +1534,7 @@ const SUPABASE_KEY = 'sb_publishable_zlfDYgzf7oIdXrfJG7327Q_O1gUQJTm';
 const {createClient} = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 let sales=[], productions=[], debts=[], debtPay=[], expenses=[], clients=[], exchanges=[], settings={};
-let invItems=[], invEntries=[], purchases=[], suppliers=[], expCategories=[];
+let invItems=[], invEntries=[], purchases=[], suppliers=[], expCategories=[], purCategories=[];
 let konusSales=[], konusPay=[];
 let recipeItems=[], historyLog=[];
 let qsPayMethod='cash';
@@ -1573,6 +1579,7 @@ db.from('biz_konus').select('*').order('created_at',{ascending:false}),
 db.from('biz_konus_payments').select('*').order('date',{ascending:false}),
 db.from('biz_recipe_items').select('*').order('name'),
 db.from('biz_history').select('*').order('created_at',{ascending:false}).limit(500),
+db.from('biz_pur_categories').select('*').order('name'),
 ]);
 sales=results[0].data||[]; productions=results[1].data||[]; debts=results[2].data||[];
 debtPay=results[3].data||[]; expenses=results[4].data||[]; clients=results[5].data||[];
@@ -1580,6 +1587,7 @@ exchanges=results[6].data||[]; invItems=results[8].data||[]; invEntries=results[
 purchases=results[10].data||[]; suppliers=results[11].data||[]; expCategories=results[12].data||[];
 konusSales=results[13].data||[]; konusPay=results[14].data||[];
 recipeItems=results[15].data||[]; historyLog=results[16].data||[];
+purCategories=results[17]?.data||[];
 const s={}; (results[7].data||[]).forEach(x=>s[x.key]=x.value);
 settings=s; applySettings();
 }
@@ -1594,7 +1602,7 @@ renderDashboard(); renderSalesPage(); renderClients();
 renderDebts(); renderExchanges(); renderExpenses(); renderWarehouse();
 renderInventory(); renderPurchases(); renderSuppliers(); renderKonus();
 renderRecipe(); renderRentab(); filterHistory();
-renderExpCatSettings();
+renderExpCatSettings(); renderPurCatSettings();
 populateSelects(); updateBadges();
 document.getElementById('dash-date-str').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 checkStockWarning();
@@ -1603,10 +1611,52 @@ function renderExpCatSettings() {
 const el=document.getElementById('exp-categories-list'); if(!el) return;
 if(!expCategories.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Нет пользовательских категорий.</div>';return;}
 el.innerHTML=expCategories.map(c=>`
-<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:4px 10px;margin:3px;font-size:12px">
-${c.name}
+<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:4px 10px;margin:3px;font-size:12px" id="expcat-${c.id}">
+<span id="expcat-lbl-${c.id}">${c.name}</span>
+<button onclick="editExpCategory('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;line-height:1" title="Переименовать">✏️</button>
 <button onclick="deleteExpCategory('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1" title="Удалить">×</button>
 </div>`).join('');
+}
+function editExpCategory(id) {
+const c=expCategories.find(x=>x.id===id); if(!c) return;
+const newName=prompt('Переименовать категорию:',c.name);
+if(!newName||newName.trim()===c.name) return;
+db.from('biz_exp_categories').update({name:newName.trim()}).eq('id',id).then(async()=>{
+await loadAll(); renderAll(); toast('Категория переименована ✓','success');
+});
+}
+function renderPurCatSettings() {
+const el=document.getElementById('pur-categories-list'); if(!el) return;
+const defaultCats=['Мука','Сахар','Масло','Яйца','Упаковка','Специи','Красители','Дрожжи','Другое сырьё'];
+const allCats=[...defaultCats,...purCategories.map(c=>c.name)];
+// Fill purchase category select
+const sel=document.getElementById('pur-cat-inp');
+if(sel){const cur=sel.value; sel.innerHTML=allCats.map(n=>`<option>${n}</option>`).join(''); if(cur) sel.value=cur;}
+if(!purCategories.length){el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Нет дополнительных категорий. Базовые: Мука, Сахар, Масло...</div>';return;}
+el.innerHTML=purCategories.map(c=>`
+<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:4px 10px;margin:3px;font-size:12px">
+<span>${c.name}</span>
+<button onclick="editPurCategory('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:12px;line-height:1">✏️</button>
+<button onclick="deletePurCategory('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;line-height:1">×</button>
+</div>`).join('');
+}
+async function addPurCategory(name) {
+if(!name?.trim()) return;
+const {error}=await db.from('biz_pur_categories').insert({name:name.trim()});
+if(error){toast('Ошибка','error');return;}
+await loadAll(); renderAll(); toast('Категория добавлена ✓','success');
+}
+function editPurCategory(id) {
+const c=purCategories.find(x=>x.id===id); if(!c) return;
+const newName=prompt('Переименовать категорию:',c.name);
+if(!newName||newName.trim()===c.name) return;
+db.from('biz_pur_categories').update({name:newName.trim()}).eq('id',id).then(async()=>{
+await loadAll(); renderAll(); toast('Переименовано ✓','success');
+});
+}
+async function deletePurCategory(id) {
+await db.from('biz_pur_categories').delete().eq('id',id);
+await loadAll(); renderAll(); toast('Удалено','success');
 }
 async function init() {
 initTheme();
@@ -1976,7 +2026,7 @@ const tf=document.getElementById('cl-type-filter')?.value||'';
 let list=clients;
 if(q) list=list.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.phone||'')).toLowerCase().includes(q));
 if(tf) list=list.filter(c=>c.type===tf);
-const withDebt=clients.filter(c=>debts.some(d=>d.client_id===c.id&&d.remaining>0)).length;
+const withDebt=new Set(debts.filter(d=>d.remaining>0).map(d=>d.client_id)).size;
 const withExch=clients.filter(c=>exchanges.some(e=>e.client_id===c.id&&!e.resolved)).length;
 setText('cl-total',clients.length);
 setText('cl-debt-cnt',withDebt);
@@ -2101,6 +2151,9 @@ async function _saveClient() {
 const name=document.getElementById('cl-name').value.trim();
 if(!name){toast('Укажите имя','error');return;}
 const id=document.getElementById('cl-edit-id').value;
+// Check duplicate name (case-insensitive), skip self when editing
+const duplicate=clients.find(c=>c.id!==id && c.name.trim().toLowerCase()===name.toLowerCase());
+if(duplicate){toast(`Клиент "${duplicate.name}" уже существует!`,'error');return;}
 const data={name,shop:document.getElementById('cl-shop').value||'',phone:document.getElementById('cl-phone').value||'',type:document.getElementById('cl-type').value,address:document.getElementById('cl-address').value||'',discount:parseFloat(document.getElementById('cl-discount').value)||0,custom_price:parseFloat(document.getElementById('cl-price').value)||null,note:document.getElementById('cl-note').value||''};
 let error;
 if(id)({error}=await db.from('biz_clients').update(data).eq('id',id));
@@ -2618,15 +2671,56 @@ function clearHistFilters() {
 filterHistory();
 }
 function getIngredientPrice(name) {
+// Find matching purchases, newest first
 const matches = purchases.filter(p=>
-p.product?.toLowerCase().includes(name.toLowerCase()) ||
-p.category?.toLowerCase().includes(name.toLowerCase())
+  p.product?.toLowerCase().includes(name.toLowerCase()) ||
+  p.category?.toLowerCase().includes(name.toLowerCase())
 ).sort((a,b)=>b.date>a.date?1:-1);
 if(!matches.length) return null;
 const m = matches[0];
-if(m.unit==='кг'||m.unit==='kg') return m.price_per_unit;
-if(m.unit==='г'||m.unit==='g') return m.price_per_unit*1000;
+// Normalize to price per KG
+const u=(m.unit||'').toLowerCase();
+if(u==='г'||u==='g'||u==='гр') return m.price_per_unit*1000;
+if(u==='кг'||u==='kg') return m.price_per_unit;
+if(u==='л'||u==='l') return m.price_per_unit; // liters ~ kg
+// Default: assume per kg
 return m.price_per_unit;
+}
+function getPurchasePricePerKg(p) {
+const u=(p.unit||'').toLowerCase();
+if(u==='г'||u==='g'||u==='гр') return p.price_per_unit*1000;
+if(u==='кг'||u==='kg') return p.price_per_unit;
+return p.price_per_unit;
+}
+function suggestRiFromPurchase() {
+const name=document.getElementById('ri-name').value.trim().toLowerCase();
+const suggest=document.getElementById('ri-purchase-suggest');
+const list=document.getElementById('ri-purchase-list');
+if(!name||name.length<2){suggest.style.display='none';return;}
+// Find unique matching purchases
+const seen=new Set();
+const matches=purchases.filter(p=>{
+const key=(p.product||p.category||'').toLowerCase();
+if(!key.includes(name)) return false;
+if(seen.has(key)) return false;
+seen.add(key); return true;
+}).slice(0,5);
+if(!matches.length){suggest.style.display='none';return;}
+suggest.style.display='block';
+list.innerHTML=matches.map(p=>{
+const priceKg=getPurchasePricePerKg(p);
+const label=p.product||p.category;
+return `<button type="button" class="btn btn-ghost btn-sm" onclick="applyRiPurchase('${label}',${priceKg})" style="font-size:11px">
+📦 ${label} — ${fmt(Math.round(priceKg))} ₸/кг (${dateStr(p.date)})
+</button>`;
+}).join('');
+}
+function applyRiPurchase(name, priceKg) {
+document.getElementById('ri-name').value=name;
+document.getElementById('ri-price').value=Math.round(priceKg);
+document.getElementById('ri-purchase-suggest').style.display='none';
+calcRiCost();
+toast('Цена из закупки применена ✓','success');
 }
 function renderRecipe() {
 let totalCostPerKg = 0;
