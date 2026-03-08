@@ -2757,6 +2757,14 @@ const t=today(), m=thisMonth(), y=thisYear();
 const from=document.getElementById('ef-from')?.value;
 const to=document.getElementById('ef-to')?.value;
 const cat=document.getElementById('ef-cat')?.value||'';
+// Populate employee filter BEFORE reading value
+const empFilter = document.getElementById('ef-emp');
+if(empFilter) {
+const cur = empFilter.value;
+const allEmps = [...new Set(expenses.filter(e=>e.employee).map(e=>e.employee))].sort();
+empFilter.innerHTML = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
+empFilter.value = cur; // restore selection
+}
 const emp=document.getElementById('ef-emp')?.value||'';
 let list=expenses;
 if(from) list=list.filter(e=>e.date>=from);
@@ -2766,15 +2774,7 @@ if(emp) list=list.filter(e=>e.employee===emp);
 setText('e-today',fmt(expenses.filter(e=>e.date===t).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-month',fmt(expenses.filter(e=>e.date?.startsWith(m)).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-year',fmt(expenses.filter(e=>e.date?.startsWith(y)).reduce((a,e)=>a+e.amount,0))+' ₸');
-setText('e-cnt',expenses.length);
-// Populate employee filter
-const empFilter = document.getElementById('ef-emp');
-if(empFilter) {
-const cur = empFilter.value;
-const allEmps = [...new Set(expenses.filter(e=>e.employee).map(e=>e.employee))].sort();
-empFilter.innerHTML = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
-empFilter.value = cur;
-}
+setText('e-cnt',list.length);
 renderExpStatCat();
 renderExpStatEmp();
 const tb=document.getElementById('exp-tb');
