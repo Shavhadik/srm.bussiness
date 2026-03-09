@@ -623,6 +623,7 @@ tbody tr:hover { background:#fafbff; }
       </table></div>
     </div>
   </div>
+</div>
 
 
 <div class="page" id="page-clients">
@@ -1793,13 +1794,11 @@ if(settings.name) document.querySelector('.logo-text').textContent=settings.name
 if(settings.price) document.getElementById('qs-price').placeholder=settings.price;
 }
 function renderAll() {
-renderDashboard(); renderSalesPage(); renderClients();
-renderDebts(); renderExchanges(); renderExpenses(); renderWarehouse();
-renderInventory(); renderPurchases(); renderSuppliers(); renderKonus();
-renderRecipe(); renderRentab(); filterHistory();
-renderExpCatSettings(); renderPurCatSettings(); renderTopClients();
-renderRecurring();
-populateSelects(); updateBadges();
+const fns=[renderDashboard,renderSalesPage,renderClients,renderDebts,renderExchanges,
+renderExpenses,renderWarehouse,renderInventory,renderPurchases,renderSuppliers,
+renderKonus,renderRecipe,renderRentab,filterHistory,renderExpCatSettings,
+renderPurCatSettings,renderTopClients,renderRecurring,populateSelects,updateBadges];
+fns.forEach(fn=>{try{fn();}catch(e){console.error('renderAll error in',fn.name,e);}});
 document.getElementById('dash-date-str').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 checkStockWarning();
 }
