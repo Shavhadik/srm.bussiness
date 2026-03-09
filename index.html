@@ -580,6 +580,7 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Продаж сегодня</div><div class="card-value" id="s-cnt">0</div></div>
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
+    <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
     <div class="card"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div>
     <div class="card"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div>
   </div>
@@ -611,7 +612,17 @@ tbody tr:hover { background:#fafbff; }
       <tbody id="sales-tb"></tbody>
     </table></div>
   </div>
-</div>
+
+  <!-- Возвраты долгов -->
+  <div id="debt-returns-block" style="margin-top:16px;display:none">
+    <div class="section-label">💰 Возвраты долгов</div>
+    <div class="table-card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Дата</th><th>Клиент</th><th>Сумма возврата</th><th>Способ</th><th>Заметка</th></tr></thead>
+        <tbody id="debt-returns-tb"></tbody>
+      </table></div>
+    </div>
+  </div>
 
 
 <div class="page" id="page-clients">
@@ -1989,6 +2000,12 @@ const debtToday=sales.filter(s=>s.date===t&&s.payment==='debt').reduce((a,s)=>a+
 const konusToday=sales.filter(s=>s.date===t&&s.payment==='konus').reduce((a,s)=>a+s.total,0);
 const activeKonus=konusSales.filter(k=>k.remaining>0);
 const activeKonusTotal=activeKonus.reduce((a,k)=>a+k.remaining,0);
+// Возвраты долгов за сегодня
+const todayDebtPay=debtPay.filter(p=>p.date===t);
+const totalDebtReturn=todayDebtPay.reduce((a,p)=>a+p.amount,0);
+const debtReturnCash=todayDebtPay.filter(p=>p.payment==='cash').reduce((a,p)=>a+p.amount,0);
+const debtReturnKaspi=todayDebtPay.filter(p=>p.payment==='kaspi').reduce((a,p)=>a+p.amount,0);
+const debtReturnKP=todayDebtPay.filter(p=>p.payment==='kaspipay').reduce((a,p)=>a+p.amount,0);
 setText('s-today', fmt(ts.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-month', fmt(ms.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-cnt', sales.filter(s=>s.date===t).length);
@@ -1997,6 +2014,12 @@ setText('s-debt-today', fmt(debtToday)+' ₸');
 setText('s-konus-today', fmt(konusToday)+' ₸');
 setText('s-konus-active', fmt(activeKonusTotal)+' ₸');
 setText('s-konus-cnt', activeKonus.length+' клиентов');
+setText('s-debt-return', totalDebtReturn?fmt(totalDebtReturn)+' ₸':'0 ₸');
+const sub=[];
+if(debtReturnCash) sub.push(`💵 ${fmt(debtReturnCash)}`);
+if(debtReturnKaspi) sub.push(`🔴 ${fmt(debtReturnKaspi)}`);
+if(debtReturnKP) sub.push(`📱 ${fmt(debtReturnKP)}`);
+setText('s-debt-return-sub', sub.join(' · '));
 const cash=ts.filter(s=>s.payment==='cash').reduce((a,s)=>a+s.total,0);
 const kaspi=ts.filter(s=>s.payment==='kaspi').reduce((a,s)=>a+s.total,0);
 const kp=ts.filter(s=>s.payment==='kaspipay').reduce((a,s)=>a+s.total,0);
@@ -2008,6 +2031,26 @@ if(el) el.innerHTML=`
 <div class="card"><div class="card-label">📋 В долг</div><div class="card-value yellow">${fmt(debtToday)} ₸</div></div>
 <div class="card"><div class="card-label">🔺 Конус</div><div class="card-value" style="color:var(--yellow)">${fmt(konusToday)} ₸</div></div>
 `;
+// Render debt returns block
+const retBlock=document.getElementById('debt-returns-block');
+const retTb=document.getElementById('debt-returns-tb');
+if(retBlock&&retTb) {
+if(todayDebtPay.length) {
+retBlock.style.display='block';
+retTb.innerHTML=todayDebtPay.sort((a,b)=>b.created_at>a.created_at?1:-1).map(p=>{
+const payIcon={cash:'<span class="badge badge-green">💵 Нал</span>',kaspi:'<span class="badge badge-red">🔴 Каспи</span>',kaspipay:'<span class="badge badge-purple">📱 QR</span>'}[p.payment]||p.payment;
+return `<tr>
+<td>${dateStr(p.date)}</td>
+<td><b>${clientName(p.client_id)}</b></td>
+<td><b style="color:var(--green)">+${fmt(p.amount)} ₸</b></td>
+<td>${payIcon}</td>
+<td style="color:var(--text2)">${p.note||'—'}</td>
+</tr>`;
+}).join('');
+} else {
+retBlock.style.display='none';
+}
+}
 renderSalesTable();
 }
 function renderSalesTable() {
