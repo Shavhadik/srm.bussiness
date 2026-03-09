@@ -576,6 +576,7 @@ tbody tr:hover { background:#fafbff; }
   </div>
   <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
     <div class="card"><div class="card-label">Выручка сегодня</div><div class="card-value green" id="s-today">0 ₸</div></div>
+    <div class="card"><div class="card-label">Выручка неделя</div><div class="card-value" id="s-week">0 ₸</div></div>
     <div class="card"><div class="card-label">Этот месяц</div><div class="card-value" id="s-month">0 ₸</div></div>
     <div class="card"><div class="card-label">Продаж сегодня</div><div class="card-value" id="s-cnt">0</div></div>
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
@@ -587,6 +588,15 @@ tbody tr:hover { background:#fafbff; }
 
   
   <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="s-pay-summary"></div>
+
+  <!-- Кнопки периода -->
+  <div class="filters" style="margin-bottom:8px">
+    <span style="font-size:12px;color:var(--text2);align-self:center">Период таблицы:</span>
+    <button class="btn btn-ghost btn-sm" id="sf-p-today" onclick="setSalesPeriod('today')">Сегодня</button>
+    <button class="btn btn-ghost btn-sm" id="sf-p-week" onclick="setSalesPeriod('week')">Неделя</button>
+    <button class="btn btn-ghost btn-sm" id="sf-p-month" onclick="setSalesPeriod('month')">Месяц</button>
+    <button class="btn btn-ghost btn-sm" id="sf-p-all" onclick="setSalesPeriod('all')" style="background:var(--accent);color:#fff">Всё</button>
+  </div>
 
   <div class="filters">
     <input type="date" class="filter-input" id="sf-date" onchange="renderSalesTable()">
@@ -669,14 +679,26 @@ tbody tr:hover { background:#fafbff; }
       <button class="btn btn-warning" onclick="openDebtModal()">+ Добавить долг</button>
     </div>
   </div>
-  <div class="cards" style="grid-template-columns:repeat(3,1fr)">
+  <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
     <div class="card"><div class="card-label">Общий долг</div><div class="card-value" style="color:var(--red)" id="dbt-total">0 ₸</div></div>
     <div class="card"><div class="card-label">Должников</div><div class="card-value" id="dbt-cnt">0</div></div>
-    <div class="card"><div class="card-label">Погашено (месяц)</div><div class="card-value" style="color:var(--green)" id="dbt-paid">0 ₸</div></div>
+    <div class="card"><div class="card-label">💰 Погашено сегодня</div><div class="card-value" style="color:var(--green)" id="dbt-paid-today">0 ₸</div><div class="card-sub" id="dbt-paid-today-sub"></div></div>
+    <div class="card"><div class="card-label">💰 Погашено неделя</div><div class="card-value" style="color:var(--green)" id="dbt-paid-week">0 ₸</div></div>
+    <div class="card"><div class="card-label">💰 Погашено месяц</div><div class="card-value" style="color:var(--green)" id="dbt-paid">0 ₸</div></div>
+  </div>
+  <!-- Фильтр периода погашений -->
+  <div class="filters" style="margin-bottom:12px">
+    <span style="font-size:12px;color:var(--text2);align-self:center">История погашений за:</span>
+    <button class="btn btn-ghost btn-sm" id="dbt-f-today" onclick="setDebtFilter('today')">Сегодня</button>
+    <button class="btn btn-ghost btn-sm" id="dbt-f-week" onclick="setDebtFilter('week')">Неделя</button>
+    <button class="btn btn-ghost btn-sm" id="dbt-f-month" onclick="setDebtFilter('month')" style="background:var(--accent);color:#fff">Месяц</button>
+    <button class="btn btn-ghost btn-sm" id="dbt-f-all" onclick="setDebtFilter('all')">Всё время</button>
+    <input type="date" class="filter-input" id="dbt-f-from" onchange="setDebtFilter('custom')" style="width:140px">
+    <input type="date" class="filter-input" id="dbt-f-to" onchange="setDebtFilter('custom')" style="width:140px">
   </div>
   <div class="section-label">Активные долги</div>
   <div id="debts-list"></div>
-  <div class="section-label" style="margin-top:24px">История погашений</div>
+  <div class="section-label" style="margin-top:24px">История погашений <span id="dbt-hist-label" style="font-weight:400;color:var(--text2);font-size:12px"></span></div>
   <div class="table-card">
     <div class="table-wrap"><table>
       <thead><tr><th>Дата</th><th>Клиент</th><th>Товар взят</th><th>Сумма долга</th><th>Оплачено</th><th>Как вернул</th><th>Заметка</th><th></th></tr></thead>
@@ -697,6 +719,12 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Активных конусов</div><div class="card-value" style="color:var(--yellow)" id="kon-cnt">0</div></div>
     <div class="card"><div class="card-label">Общая сумма</div><div class="card-value" style="color:var(--red)" id="kon-sum">0 ₸</div></div>
     <div class="card"><div class="card-label">Оплачено (месяц)</div><div class="card-value" style="color:var(--green)" id="kon-paid">0 ₸</div></div>
+  </div>
+  <div class="filters" style="margin-bottom:12px">
+    <select class="filter-input" id="kon-filter-client" onchange="renderKonus()" style="width:200px">
+      <option value="">Все клиенты</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('kon-filter-client').value='';renderKonus()">Сбросить</button>
   </div>
   <div class="section-label">Активные конусы</div>
   <div id="konus-list"></div>
@@ -2005,7 +2033,10 @@ const totalDebtReturn=todayDebtPay.reduce((a,p)=>a+p.amount,0);
 const debtReturnCash=todayDebtPay.filter(p=>p.payment==='cash').reduce((a,p)=>a+p.amount,0);
 const debtReturnKaspi=todayDebtPay.filter(p=>p.payment==='kaspi').reduce((a,p)=>a+p.amount,0);
 const debtReturnKP=todayDebtPay.filter(p=>p.payment==='kaspipay').reduce((a,p)=>a+p.amount,0);
+const wS=weekStart();
+const ws_sales=sales.filter(s=>s.date>=wS&&s.payment!=='debt'&&s.payment!=='konus');
 setText('s-today', fmt(ts.reduce((a,s)=>a+s.total,0))+' ₸');
+setText('s-week', fmt(ws_sales.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-month', fmt(ms.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-cnt', sales.filter(s=>s.date===t).length);
 setText('s-kg', fmt(sales.filter(s=>s.date===t).reduce((a,s)=>a+s.qty,0)));
@@ -2057,6 +2088,11 @@ const fd=document.getElementById('sf-date')?.value;
 const fsearch=document.getElementById('sf-search')?.value?.toLowerCase()||'';
 const fpay=document.getElementById('sf-pay')?.value||'';
 let filtered=sales;
+// Apply period filter
+if(salesPeriod==='today') filtered=filtered.filter(s=>s.date===today());
+else if(salesPeriod==='week') filtered=filtered.filter(s=>s.date>=weekStart());
+else if(salesPeriod==='month') filtered=filtered.filter(s=>s.date?.startsWith(thisMonth()));
+// Then apply manual filters on top
 if(fd) filtered=filtered.filter(s=>s.date===fd);
 if(fpay) filtered=filtered.filter(s=>s.payment===fpay);
 if(fsearch) filtered=filtered.filter(s=>clientName(s.client_id).toLowerCase().includes(fsearch)||(s.note||'').toLowerCase().includes(fsearch));
@@ -2553,26 +2589,59 @@ await loadAll(); renderAll(); toast('Удалено','success');
 },'Удалить клиента? Все его данные останутся в продажах.');
 }
 function openDebtModal() { openOverlay('debt-modal'); }
+let debtFilterPeriod='month';
+let salesPeriod='all';
+function weekStart(d) {
+const dt=d?new Date(d):new Date();
+dt.setDate(dt.getDate()-dt.getDay()+1);
+return dt.toISOString().split('T')[0];
+}
+function setDebtFilter(p) {
+debtFilterPeriod=p;
+['today','week','month','all','custom'].forEach(x=>{
+const btn=document.getElementById('dbt-f-'+x);
+if(btn) btn.style.cssText=x===p?'background:var(--accent);color:#fff':'';
+});
+renderDebts();
+}
+function setSalesPeriod(p) {
+salesPeriod=p;
+['today','week','month','all'].forEach(x=>{
+const btn=document.getElementById('sf-p-'+x);
+if(btn) btn.style.cssText=x===p?'background:var(--accent);color:#fff':'';
+});
+renderSalesTable();
+}
 function renderDebts() {
+const t=today(), m=thisMonth(), wS=weekStart();
 const active=debts.filter(d=>d.remaining>0);
 const total=active.reduce((a,d)=>a+d.remaining,0);
-const m=thisMonth();
+const paidToday=debtPay.filter(p=>p.date===t).reduce((a,p)=>a+p.amount,0);
+const paidTodayCash=debtPay.filter(p=>p.date===t&&p.payment==='cash').reduce((a,p)=>a+p.amount,0);
+const paidTodayKaspi=debtPay.filter(p=>p.date===t&&p.payment==='kaspi').reduce((a,p)=>a+p.amount,0);
+const paidTodayKP=debtPay.filter(p=>p.date===t&&p.payment==='kaspipay').reduce((a,p)=>a+p.amount,0);
+const paidWeek=debtPay.filter(p=>p.date>=wS).reduce((a,p)=>a+p.amount,0);
 const paidM=debtPay.filter(p=>p.date?.startsWith(m)).reduce((a,p)=>a+p.amount,0);
 setText('dbt-total',fmt(total)+' ₸');
 setText('dbt-cnt',new Set(active.map(d=>d.client_id)).size);
+setText('dbt-paid-today',fmt(paidToday)+' ₸');
+const sub=[];
+if(paidTodayCash) sub.push(`💵 ${fmt(paidTodayCash)}`);
+if(paidTodayKaspi) sub.push(`🔴 ${fmt(paidTodayKaspi)}`);
+if(paidTodayKP) sub.push(`📱 ${fmt(paidTodayKP)}`);
+setText('dbt-paid-today-sub',sub.join(' · '));
+setText('dbt-paid-week',fmt(paidWeek)+' ₸');
 setText('dbt-paid',fmt(paidM)+' ₸');
 updateBadges();
 const list=document.getElementById('debts-list');
 if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Долгов нет!</p></div>';}
 else {
-// Group by client
 const byClient={};
 active.forEach(d=>{
 if(!byClient[d.client_id]) byClient[d.client_id]={debts:[],total:0};
 byClient[d.client_id].debts.push(d);
 byClient[d.client_id].total+=d.remaining;
 });
-// Sort by total desc
 const sorted=Object.entries(byClient).sort((a,b)=>b[1].total-a[1].total);
 list.innerHTML=sorted.map(([cid,data])=>{
 const c=clients.find(x=>x.id===cid);
@@ -2581,7 +2650,6 @@ const allDebts=data.debts.sort((a,b)=>b.date>a.date?1:-1);
 const daysSinceFirst=Math.round((new Date()-new Date(allDebts[allDebts.length-1].date))/(1000*60*60*24));
 const initials=(c?.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 return `<div class="debt-card" style="padding:0;overflow:hidden">
-<!-- Шапка клиента -->
 <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer" onclick="toggleDebtClient('${cid}')">
 <div style="display:flex;align-items:center;gap:10px">
 <div style="width:36px;height:36px;border-radius:50%;background:var(--red-light);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${initials}</div>
@@ -2598,7 +2666,6 @@ return `<div class="debt-card" style="padding:0;overflow:hidden">
 <div style="color:var(--text2);font-size:18px" id="debt-arrow-${cid}">▼</div>
 </div>
 </div>
-<!-- Детали долгов (раскрываются) -->
 <div id="debt-detail-${cid}" style="border-top:1px solid var(--border)">
 ${allDebts.map((d,i)=>{
 const pays=debtPay.filter(p=>p.debt_id===d.id).sort((a,b)=>a.date>b.date?1:-1);
@@ -2627,15 +2694,27 @@ ${pays.length?`<div style="margin-bottom:8px">${pays.map(p=>`<div style="display
 <button class="btn btn-success btn-sm" style="flex:1" onclick="openPayDebt('${d.id}')">✓ Оплатил</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteDebt('${d.id}')" title="Удалить">🗑</button>
 </div>
-</div>`;
-}).join('')}
+</div>`;}).join('')}
 </div>
 </div>`;
 }).join('');
 }
+// History with period filter
+let histList=debtPay;
+if(debtFilterPeriod==='today') histList=debtPay.filter(p=>p.date===t);
+else if(debtFilterPeriod==='week') histList=debtPay.filter(p=>p.date>=wS);
+else if(debtFilterPeriod==='month') histList=debtPay.filter(p=>p.date?.startsWith(m));
+else if(debtFilterPeriod==='custom'){
+const from=document.getElementById('dbt-f-from')?.value;
+const to=document.getElementById('dbt-f-to')?.value;
+if(from) histList=histList.filter(p=>p.date>=from);
+if(to) histList=histList.filter(p=>p.date<=to);
+}
+const labelMap={today:'— сегодня',week:'— эта неделя',month:'— этот месяц',all:'— всё время',custom:'— выбранный период'};
+setText('dbt-hist-label',labelMap[debtFilterPeriod]||'');
 const tb=document.getElementById('debt-hist-tb');
-if(!debtPay.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Погашений нет</td></tr>';return;}
-tb.innerHTML=debtPay.map(p=>{
+if(!histList.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Погашений нет</td></tr>';return;}
+tb.innerHTML=histList.map(p=>{
 const d=debts.find(x=>x.id===p.debt_id)||{};
 const payIcon={cash:'💵 Нал',kaspi:'🔴 Каспи',kaspipay:'📱 QR'}[p.payment]||'—';
 return `<tr>
@@ -3409,9 +3488,23 @@ setText('kon-cnt',active.length);
 setText('kon-sum',fmt(total)+' ₸');
 setText('kon-paid',fmt(paidM)+' ₸');
 updateBadges();
+// Populate client filter
+const cf=document.getElementById('kon-filter-client');
+if(cf){
+const cur=cf.value;
+const cids=[...new Set(konusSales.map(k=>k.client_id))];
+cf.innerHTML='<option value="">Все клиенты</option>'+cids.map(cid=>{
+const c=clients.find(x=>x.id===cid);
+const name=c?(c.name+(c.shop?' / '+c.shop:'')):'Без клиента';
+return `<option value="${cid}">${name}</option>`;
+}).join('');
+cf.value=cur;
+}
+const filterCid=cf?.value||'';
+const filtered=active.filter(k=>!filterCid||k.client_id===filterCid);
 const list=document.getElementById('konus-list');
-if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔺</div><p>Активных конусов нет!</p></div>';}
-else list.innerHTML=active.map(k=>`
+if(!filtered.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔺</div><p>Активных конусов нет!</p></div>';}
+else list.innerHTML=filtered.map(k=>`
 <div class="debt-card">
 <div class="debt-top">
 <div>
@@ -3425,9 +3518,10 @@ else list.innerHTML=active.map(k=>`
 <button class="btn btn-ghost btn-sm" onclick="confirmDelete(()=>deleteKonus('${k.id}'))">🗑</button>
 </div>
 </div>`).join('');
+const histFiltered=filterCid?konusPay.filter(p=>p.client_id===filterCid):konusPay;
 const tb=document.getElementById('konus-hist-tb');
-if(!konusPay.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Оплат нет</td></tr>';return;}
-tb.innerHTML=konusPay.map(p=>{
+if(!histFiltered.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Оплат нет</td></tr>';return;}
+tb.innerHTML=histFiltered.map(p=>{
 const k=konusSales.find(x=>x.id===p.konus_id)||{};
 return `<tr>
 <td>${dateStr(p.date)}</td>
