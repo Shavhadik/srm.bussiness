@@ -3014,19 +3014,20 @@ ${data.items.length>10?`<div style="font-size:11px;color:var(--text2);padding-to
 }
 function renderExpenses() {
 const t=today(), m=thisMonth(), y=thisYear();
-const from=document.getElementById('ef-from')?.value;
-const to=document.getElementById('ef-to')?.value;
+const from=document.getElementById('ef-from')?.value||'';
+const to=document.getElementById('ef-to')?.value||'';
 const cat=document.getElementById('ef-cat')?.value||'';
 // Populate employee filter BEFORE reading value
 const empFilter = document.getElementById('ef-emp');
 if(empFilter) {
 const cur = empFilter.value;
 const allEmps = [...new Set(expenses.filter(e=>e.employee).map(e=>e.employee))].sort();
-empFilter.innerHTML = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
-empFilter.value = cur; // restore selection
+const newOpts = '<option value="">Все сотрудники</option>' + allEmps.map(e=>`<option value="${e}">${e}</option>`).join('');
+if(empFilter.innerHTML !== newOpts) empFilter.innerHTML = newOpts; // only update if changed
+if(allEmps.includes(cur)) empFilter.value = cur; // restore only if still valid
 }
-const emp=document.getElementById('ef-emp')?.value||'';
-let list=expenses;
+const emp=empFilter?.value||'';
+let list=[...expenses]; // copy to avoid mutation
 if(from) list=list.filter(e=>e.date>=from);
 if(to) list=list.filter(e=>e.date<=to);
 if(cat) list=list.filter(e=>e.category===cat);
@@ -3035,13 +3036,14 @@ setText('e-today',fmt(expenses.filter(e=>e.date===t).reduce((a,e)=>a+e.amount,0)
 setText('e-month',fmt(expenses.filter(e=>e.date?.startsWith(m)).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-year',fmt(expenses.filter(e=>e.date?.startsWith(y)).reduce((a,e)=>a+e.amount,0))+' ₸');
 setText('e-cnt',list.length);
-renderExpStatCat();
-renderExpStatEmp();
+try{renderExpStatCat();}catch(e){console.error('renderExpStatCat error',e);}
+try{renderExpStatEmp();}catch(e){console.error('renderExpStatEmp error',e);}
 const tb=document.getElementById('exp-tb');
+if(!tb) return;
 if(!list.length){tb.innerHTML='<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💸</div><p>Расходов нет</p></div></td></tr>';return;}
 tb.innerHTML=list.map(e=>`<tr>
 <td>${dateStr(e.date)}</td>
-<td><span class="badge badge-red">${e.category}</span></td>
+<td><span class="badge badge-red">${e.category||'—'}</span></td>
 <td>${e.employee||'—'}</td>
 <td><b>${fmt(e.amount)} ₸</b></td>
 <td style="color:var(--text2)">${e.description||'—'}</td>
