@@ -2031,6 +2031,19 @@ const display = showAll ? filtered : filtered.slice(0,50);
 tb.innerHTML=display.map(s=>{
 const profit = s.cost_per_kg ? (s.price_per_kg - s.cost_per_kg)*s.qty - (s.discount||0) : null;
 const sid = s.id;
+// For debt sales — find if/how they were paid back
+let debtReturnMethod = null;
+if(s.payment==='debt') {
+const debt = debts.find(d=>d.client_id===s.client_id && d.date===s.date && d.amount===s.total);
+if(debt) {
+const pays = debtPay.filter(p=>p.debt_id===debt.id);
+if(pays.length) {
+// Use most recent payment method
+const methods = [...new Set(pays.map(p=>p.payment))];
+debtReturnMethod = methods.length===1 ? methods[0] : 'mixed';
+}
+}
+}
 return `<tr>
 <td style="white-space:nowrap">
 <div style="font-size:12px;color:var(--text)">${dateStr(s.date)}</div>
@@ -2044,7 +2057,7 @@ ${s.note?`<div style="font-size:11px;color:var(--text2)">${s.note}</div>`:''}
 <td>${fmt(s.price_per_kg)} ₸</td>
 <td>${s.discount?`<span class="badge badge-purple">-${fmt(s.discount)} ₸</span>`:'—'}</td>
 <td><b>${fmt(s.total)} ₸</b></td>
-<td>${payBadge(s.payment)}</td>
+<td>${payBadge(s.payment, debtReturnMethod)}</td>
 <td style="color:var(--text2);font-size:12px">${s.cost_per_kg?fmt(s.cost_per_kg*s.qty)+' ₸':'—'}</td>
 <td style="font-weight:600;color:${profit!==null?(profit>=0?'var(--green)':'var(--red)'):'var(--text2)'}">${profit!==null?fmt(profit)+' ₸':'—'}</td>
 <td style="display:flex;gap:4px">
@@ -2333,7 +2346,15 @@ ${!weekAlert&&thisWkKg>0&&lastWkKg>0&&weekDiff>0?`<div style="font-size:11px;col
 <div class="client-stats">
 <div class="client-stat"><div class="client-stat-val">${fmt(totalRev)} ₸</div><div class="client-stat-lbl">Выручка</div></div>
 <div class="client-stat"><div class="client-stat-val">${fmt(totalKg)} ${unit()}</div><div class="client-stat-lbl">Куплено</div></div>
-${thisWkKg?`<div class="client-stat"><div class="client-stat-val" style="color:var(--accent)">${fmt(thisWkKg)} ${unit()}</div><div class="client-stat-lbl">Эта неделя</div></div>`:''}
+<div class="client-stat" style="border-left:2px solid ${weekDiff<0&&lastWkKg>0?'var(--red)':weekDiff>0?'var(--green)':'var(--border)'};padding-left:8px">
+<div style="font-size:10px;color:var(--text2);margin-bottom:2px">Эта нед. / Прошлая</div>
+<div style="font-size:13px;font-weight:700;color:${weekDiff<0&&lastWkKg>0?'var(--red)':weekDiff>0?'var(--green)':'var(--text)'}">
+${fmt(thisWkKg)} ${unit()} ${lastWkKg>0?`<span style="font-size:11px;color:var(--text2)">/ ${fmt(lastWkKg)}</span>`:''}
+</div>
+${lastWkKg>0&&weekDiff!==0?`<div style="font-size:10px;font-weight:600;color:${weekDiff<0?'var(--red)':'var(--green)'}">
+${weekDiff>0?'▲ +':'▼ '}${Math.abs(weekDiff).toFixed(1)} ${unit()}
+</div>`:''}
+</div>
 ${cDebt?`<div class="client-stat"><div class="client-stat-val" style="color:var(--red)">${fmt(cDebt)} ₸</div><div class="client-stat-lbl">Долг</div></div>`:''}
 </div>
 <div style="display:flex;flex-direction:column;gap:4px">
@@ -2348,48 +2369,100 @@ function showClientDetail(id) {
 const c=clients.find(x=>x.id===id); if(!c) return;
 const cSales=sales.filter(s=>s.client_id===id);
 const cDebts=debts.filter(d=>d.client_id===id);
+const cDebtPay=debtPay.filter(p=>p.client_id===id);
 const cExch=exchanges.filter(e=>e.client_id===id);
 const totalRev=cSales.filter(s=>s.payment!=='debt').reduce((a,s)=>a+s.total,0);
+const totalDebtPaid=cDebtPay.reduce((a,p)=>a+p.amount,0);
 const totalKg=cSales.reduce((a,s)=>a+s.qty,0);
 const activeDebt=cDebts.filter(d=>d.remaining>0).reduce((a,d)=>a+d.remaining,0);
-const weekStart=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
+const weekStartFn=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
 const weeks=[];
-for(let i=7;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i*7);weeks.push(weekStart(d.toISOString().split('T')[0]));}
-const weeklyKg=weeks.map(w=>cSales.filter(s=>weekStart(s.date)===w).reduce((a,s)=>a+s.qty,0));
+for(let i=7;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i*7);weeks.push(weekStartFn(d.toISOString().split('T')[0]));}
+const weeklyKg=weeks.map(w=>cSales.filter(s=>weekStartFn(s.date)===w).reduce((a,s)=>a+s.qty,0));
 const avgWeekKg=weeklyKg.filter(x=>x>0).length?weeklyKg.filter(x=>x>0).reduce((a,b)=>a+b,0)/weeklyKg.filter(x=>x>0).length:0;
 const thisWkKg=weeklyKg[weeklyKg.length-1];
 const lastWkKg=weeklyKg[weeklyKg.length-2];
+const weekDiff=thisWkKg-lastWkKg;
 const salePrice=parseFloat(settings.price)||0;
 const missedRevenue=lastWkKg>thisWkKg?((lastWkKg-thisWkKg)*salePrice):0;
 document.getElementById('cl-detail-title').textContent=c.name+(c.shop?' / '+c.shop:'');
 document.getElementById('cl-detail-body').innerHTML=`
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px">
+<!-- Карточки -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px">
 <div class="card"><div class="card-label">Выручка</div><div class="card-value" style="font-size:18px">${fmt(totalRev)} ₸</div></div>
 <div class="card"><div class="card-label">Куплено кг</div><div class="card-value" style="font-size:18px">${fmt(totalKg)}</div></div>
-<div class="card"><div class="card-label">Долг</div><div class="card-value" style="font-size:18px;color:${activeDebt?'var(--red)':'var(--green)'}">${fmt(activeDebt)} ₸</div></div>
-<div class="card"><div class="card-label">Эта неделя</div><div class="card-value" style="font-size:18px;color:var(--accent)">${fmt(thisWkKg)} ${unit()}</div></div>
-<div class="card"><div class="card-label">Прошлая неделя</div><div class="card-value" style="font-size:18px">${fmt(lastWkKg)} ${unit()}</div></div>
-<div class="card"><div class="card-label">Среднее/неделю</div><div class="card-value" style="font-size:18px">${avgWeekKg.toFixed(1)} ${unit()}</div></div>
+<div class="card" style="border-color:${activeDebt?'var(--red)':'var(--green)'}"><div class="card-label">Долг сейчас</div><div class="card-value" style="font-size:18px;color:${activeDebt?'var(--red)':'var(--green)'}">${activeDebt?fmt(activeDebt)+' ₸':'✅ Нет'}</div></div>
+<div class="card"><div class="card-label">Вернул долгов</div><div class="card-value" style="font-size:18px;color:var(--green)">${fmt(totalDebtPaid)} ₸</div></div>
 </div>
-${missedRevenue>0?`<div style="background:var(--red-light);border:1px solid var(--red);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--red)">
-⚠️ <b>Недополученная прибыль:</b> клиент взял на ${(lastWkKg-thisWkKg).toFixed(1)} ${unit()} меньше чем прошлую неделю — потери ~${fmt(Math.round(missedRevenue))} ₸
+
+<!-- Эта vs прошлая неделя -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+<div style="background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center">
+<div style="font-size:12px;color:var(--text2);margin-bottom:4px">⚡ Эта неделя</div>
+<div style="font-size:26px;font-weight:800;color:var(--accent)">${fmt(thisWkKg)}</div>
+<div style="font-size:12px;color:var(--text2)">${unit()}</div>
+</div>
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+<div style="font-size:12px;color:var(--text2);margin-bottom:4px">Прошлая неделя</div>
+<div style="font-size:26px;font-weight:800;color:var(--text2)">${fmt(lastWkKg)}</div>
+<div style="font-size:12px;color:var(--text2)">${unit()}</div>
+</div>
+</div>
+${weekDiff!==0&&lastWkKg>0?`<div style="border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;background:${weekDiff<0?'var(--red-light)':'var(--green-light)'};color:${weekDiff<0?'var(--red)':'var(--green)'}">
+${weekDiff<0?`⚠️ Взял на ${Math.abs(weekDiff).toFixed(1)} ${unit()} меньше — недополучено ~${fmt(Math.round(missedRevenue))} ₸`:`📈 Взял на ${weekDiff.toFixed(1)} ${unit()} больше — +${fmt(Math.round(Math.abs(weekDiff)*salePrice))} ₸`}
 </div>`:''}
+
+<!-- История долгов -->
+${cDebts.length?`<div class="section-label">📋 История долгов</div>
+<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
+${cDebts.sort((a,b)=>b.date>a.date?1:-1).map(d=>{
+const pays=cDebtPay.filter(p=>p.debt_id===d.id).sort((a,b)=>a.date>b.date?1:-1);
+const totalPaid=pays.reduce((a,p)=>a+p.amount,0);
+const isActive=d.remaining>0;
+const daysPassed=Math.round((new Date()-new Date(d.date))/(1000*60*60*24));
+return `<div style="border:1px solid ${isActive?'var(--red)':'var(--border)'};border-radius:12px;padding:12px;background:${isActive?'var(--red-light)':'var(--bg)'}">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+<div>
+<div style="font-weight:700;font-size:14px">${fmt(d.amount)} ₸ <span style="font-size:11px;color:var(--text2)">от ${dateStr(d.date)}</span></div>
+<div style="font-size:11px;color:var(--text2)">${daysPassed} дней назад${d.note?' · '+d.note:''}</div>
+</div>
+<div style="text-align:right">
+${isActive?`<span style="font-size:12px;font-weight:700;color:var(--red)">Осталось: ${fmt(d.remaining)} ₸</span>`:`<span style="font-size:12px;font-weight:700;color:var(--green)">✅ Погашен</span>`}
+</div>
+</div>
+${pays.length?`<div style="border-top:1px solid ${isActive?'rgba(239,68,68,0.2)':'var(--border)'};padding-top:8px">
+<div style="font-size:11px;color:var(--text2);margin-bottom:4px">Оплаты:</div>
+${pays.map(p=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">
+<span style="color:var(--text2)">${dateStr(p.date)} · ${p.payment==='cash'?'💵 Нал':p.payment==='kaspi'?'🔴 Каспи':'📱 QR'}</span>
+<span style="font-weight:600;color:var(--green)">+${fmt(p.amount)} ₸</span>
+</div>`).join('')}
+</div>`:''}
+<div style="margin-top:8px;background:var(--bg);border-radius:6px;height:6px;overflow:hidden">
+<div style="background:${isActive?'var(--red)':'var(--green)'};height:100%;width:${Math.min(100,Math.round(totalPaid/d.amount*100))}%;border-radius:6px;transition:width 0.3s"></div>
+</div>
+<div style="font-size:10px;color:var(--text2);margin-top:2px">${Math.round(totalPaid/d.amount*100)}% погашено</div>
+</div>`;}).join('')}
+</div>`:''}
+
+<!-- По неделям -->
 <div class="section-label">По неделям (последние 8 недель)</div>
 <div class="table-card" style="margin-bottom:16px"><div class="table-wrap"><table>
 <thead><tr><th>Неделя с</th><th>Кг</th><th>Выручка</th><th>Тренд</th></tr></thead>
 <tbody>${weeks.map((w,i)=>{
 const kg=weeklyKg[i];
-const rev=cSales.filter(s=>weekStart(s.date)===w).reduce((a,s)=>a+s.total,0);
+const rev=cSales.filter(s=>weekStartFn(s.date)===w).reduce((a,s)=>a+s.total,0);
 const prev=i>0?weeklyKg[i-1]:null;
 const trend=prev!==null&&prev>0?(kg>prev?'📈':kg<prev?'📉':'➡️'):'';
 return `<tr style="${i===weeks.length-1?'font-weight:700;background:var(--accent-light)':''}">
 <td>${w}</td><td>${kg?fmt(kg)+' '+unit():'—'}</td><td>${rev?fmt(rev)+' ₸':'—'}</td><td>${trend}</td>
 </tr>`;}).join('')}</tbody>
 </table></div></div>
+
+<!-- Последние продажи -->
 <div class="section-label">Последние продажи</div>
 <div class="table-card"><div class="table-wrap"><table>
 <thead><tr><th>Дата</th><th>Кг</th><th>Сумма</th><th>Оплата</th></tr></thead>
-<tbody>${cSales.slice(0,10).map(s=>`<tr><td>${dateStr(s.date)}</td><td>${s.qty} ${unit()}</td><td>${fmt(s.total)} ₸</td><td>${payBadge(s.payment)}</td></tr>`).join('')}</tbody>
+<tbody>${cSales.slice(0,15).map(s=>`<tr><td>${dateStr(s.date)}</td><td>${s.qty} ${unit()}</td><td>${fmt(s.total)} ₸</td><td>${payBadge(s.payment)}</td></tr>`).join('')}</tbody>
 </table></div></div>`;
 openOverlay('cl-detail-modal');
 }
@@ -2444,22 +2517,80 @@ const total=active.reduce((a,d)=>a+d.remaining,0);
 const m=thisMonth();
 const paidM=debtPay.filter(p=>p.date?.startsWith(m)).reduce((a,p)=>a+p.amount,0);
 setText('dbt-total',fmt(total)+' ₸');
-setText('dbt-cnt',active.length);
+setText('dbt-cnt',new Set(active.map(d=>d.client_id)).size);
 setText('dbt-paid',fmt(paidM)+' ₸');
 updateBadges();
 const list=document.getElementById('debts-list');
-if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Долгов нет!</p></div>';} 
-else list.innerHTML=active.map(d=>`
-<div class="debt-card">
-<div class="debt-top">
-<div><div class="debt-name">${clientName(d.client_id)}</div><div class="debt-meta">Взял: ${dateStr(d.date)} · ${d.kg?d.kg+' '+unit()+' · ':''} Всего было: ${fmt(d.amount)} ₸${d.note?' · '+d.note:''}</div></div>
-<div class="debt-amount">${fmt(d.remaining)} ₸</div>
+if(!active.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🎉</div><p>Долгов нет!</p></div>';}
+else {
+// Group by client
+const byClient={};
+active.forEach(d=>{
+if(!byClient[d.client_id]) byClient[d.client_id]={debts:[],total:0};
+byClient[d.client_id].debts.push(d);
+byClient[d.client_id].total+=d.remaining;
+});
+// Sort by total desc
+const sorted=Object.entries(byClient).sort((a,b)=>b[1].total-a[1].total);
+list.innerHTML=sorted.map(([cid,data])=>{
+const c=clients.find(x=>x.id===cid);
+const cName=c?(c.name+(c.shop?' / '+c.shop:'')):'Без клиента';
+const allDebts=data.debts.sort((a,b)=>b.date>a.date?1:-1);
+const daysSinceFirst=Math.round((new Date()-new Date(allDebts[allDebts.length-1].date))/(1000*60*60*24));
+const initials=(c?.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+return `<div class="debt-card" style="padding:0;overflow:hidden">
+<!-- Шапка клиента -->
+<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer" onclick="toggleDebtClient('${cid}')">
+<div style="display:flex;align-items:center;gap:10px">
+<div style="width:36px;height:36px;border-radius:50%;background:var(--red-light);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0">${initials}</div>
+<div>
+<div style="font-weight:700;font-size:15px">${cName}</div>
+<div style="font-size:11px;color:var(--text2)">${allDebts.length} долг${allDebts.length>1?'а/ов':''} · с ${dateStr(allDebts[allDebts.length-1].date)} (${daysSinceFirst} дн.)</div>
 </div>
-<div class="debt-actions">
-<button class="btn btn-success btn-sm" onclick="openPayDebt('${d.id}')">✓ Оплатил</button>
-<button class="btn btn-ghost btn-sm" onclick="deleteDebt('${d.id}')">🗑</button>
 </div>
-</div>`).join('');
+<div style="display:flex;align-items:center;gap:10px">
+<div style="text-align:right">
+<div style="font-size:18px;font-weight:800;color:var(--red)">${fmt(data.total)} ₸</div>
+<div style="font-size:10px;color:var(--text2)">общий долг</div>
+</div>
+<div style="color:var(--text2);font-size:18px" id="debt-arrow-${cid}">▼</div>
+</div>
+</div>
+<!-- Детали долгов (раскрываются) -->
+<div id="debt-detail-${cid}" style="border-top:1px solid var(--border)">
+${allDebts.map((d,i)=>{
+const pays=debtPay.filter(p=>p.debt_id===d.id).sort((a,b)=>a.date>b.date?1:-1);
+const totalPaid=pays.reduce((a,p)=>a+p.amount,0);
+const pct=Math.min(100,Math.round(totalPaid/d.amount*100));
+const daysAgo=Math.round((new Date()-new Date(d.date))/(1000*60*60*24));
+return `<div style="padding:12px 16px;${i>0?'border-top:1px solid var(--bg)':''}background:${i%2===0?'var(--bg)':'var(--card)'}">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+<div>
+<div style="font-size:12px;font-weight:600">📅 ${dateStr(d.date)} <span style="font-weight:400;color:var(--text2)">(${daysAgo} дн. назад)</span></div>
+<div style="font-size:11px;color:var(--text2)">${d.kg?d.kg+' '+unit()+' · ':''} Сумма: ${fmt(d.amount)} ₸${d.note?' · '+d.note:''}</div>
+</div>
+<div style="text-align:right">
+<div style="font-size:14px;font-weight:700;color:var(--red)">Остаток: ${fmt(d.remaining)} ₸</div>
+${pays.length?`<div style="font-size:10px;color:var(--green)">Оплачено: ${fmt(totalPaid)} ₸</div>`:''}
+</div>
+</div>
+<div style="background:var(--border);border-radius:100px;height:4px;overflow:hidden;margin-bottom:8px">
+<div style="background:${pct>=100?'var(--green)':'var(--red)'};height:100%;width:${pct}%;border-radius:100px"></div>
+</div>
+${pays.length?`<div style="margin-bottom:8px">${pays.map(p=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:var(--text2)">
+<span>${dateStr(p.date)} · ${{cash:'💵 Нал',kaspi:'🔴 Каспи',kaspipay:'📱 QR'}[p.payment]||p.payment}</span>
+<span style="color:var(--green);font-weight:600">+${fmt(p.amount)} ₸</span>
+</div>`).join('')}</div>`:''}
+<div style="display:flex;gap:6px">
+<button class="btn btn-success btn-sm" style="flex:1" onclick="openPayDebt('${d.id}')">✓ Оплатил</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteDebt('${d.id}')" title="Удалить">🗑</button>
+</div>
+</div>`;
+}).join('')}
+</div>
+</div>`;
+}).join('');
+}
 const tb=document.getElementById('debt-hist-tb');
 if(!debtPay.length){tb.innerHTML='<tr><td colspan="8" class="empty-state">Погашений нет</td></tr>';return;}
 tb.innerHTML=debtPay.map(p=>{
@@ -2476,6 +2607,14 @@ return `<tr>
 <td><button class="btn btn-ghost btn-sm btn-icon" onclick="deleteDebtPay('${p.id}')" title="Отменить оплату">↩️</button></td>
 </tr>`;
 }).join('');
+}
+function toggleDebtClient(cid) {
+const el=document.getElementById(`debt-detail-${cid}`);
+const arrow=document.getElementById(`debt-arrow-${cid}`);
+if(!el) return;
+const isOpen=el.style.display!=='none';
+el.style.display=isOpen?'none':'block';
+if(arrow) arrow.textContent=isOpen?'▶':'▼';
 }
 async function saveDebt() { await withSaving(_saveDebt); }
 async function _saveDebt() {
@@ -4309,7 +4448,16 @@ if(!id) return '<span style="color:var(--text2)">—</span>';
 const c=clients.find(x=>x.id===id);
 return c?(c.name+(c.shop?' / '+c.shop:'')):'—';
 }
-function payBadge(p) {
+function payBadge(p, debtReturnMethod) {
+if(p==='debt' && debtReturnMethod) {
+const methodMap={cash:'💵 Нал',kaspi:'🔴 Каспи',kaspipay:'📱 QR',mixed:'🔀 Смеш.'};
+const badgeClass={cash:'badge-green',kaspi:'badge-red',kaspipay:'badge-purple',mixed:''}[debtReturnMethod]||'';
+return `<div style="display:inline-flex;flex-direction:column;gap:2px">
+<span class="badge badge-yellow" style="font-size:10px">📋 Долг</span>
+<span style="font-size:10px;color:var(--text2);text-align:center">↓ возврат</span>
+<span class="badge ${badgeClass}" style="font-size:10px">${methodMap[debtReturnMethod]||debtReturnMethod}</span>
+</div>`;
+}
 const map={cash:'<span class="badge badge-green">💵 Нал</span>',kaspi:'<span class="badge badge-red">🔴 Каспи</span>',kaspipay:'<span class="badge badge-purple">📱 QR</span>',debt:'<span class="badge badge-yellow">📋 Долг</span>',konus:'<span class="badge badge-yellow">🔺 Конус</span>',mixed:'<span class="badge" style="background:var(--purple-light);color:var(--purple)">🔀 Смеш.</span>'};
 return map[p]||p;
 }
