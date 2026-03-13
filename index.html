@@ -1478,6 +1478,8 @@ tbody tr:hover { background:#fafbff; }
   </div>
   <div id="reminders-list"></div>
 </div>
+
+<div class="overlay" id="qs-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
       <div class="modal-title">⚡ Быстрая продажа</div>
@@ -2632,24 +2634,19 @@ if(callBtn){if(c.phone){callBtn.href='tel:'+c.phone;callBtn.style.display='inlin
 if(waBtn){if(c.phone){waBtn.href='https://wa.me/'+c.phone.replace(/\D/g,'');waBtn.style.display='inline-flex';}else waBtn.style.display='none';}
 if(editBtn) editBtn.onclick=()=>openClientModal(c.id);
 document.getElementById('cp-body').innerHTML=`
-<!-- Кнопки действий -->
-<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
-${c.address?`<a href="https://2gis.kz/search/${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ 2GIS</a>`:''}
-${c.address?`<a href="https://yandex.ru/maps/?text=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ Яндекс</a>`:''}
-<button class="btn btn-primary btn-sm" onclick="openQuickSaleForClient('${c.id}')">💰 Продажа</button>
-${activeDebtItems.length?`<button class="btn btn-warning btn-sm" onclick="openPayDebt('${activeDebtItems[0].id}')">✅ Оплатить долг</button>`:''}
-<button class="btn btn-ghost btn-sm" onclick="openDebtModal('','${c.id}')">📋 Добавить долг</button>
-<button class="btn btn-ghost btn-sm" onclick="openReminderModal();setTimeout(()=>{document.getElementById('rem-client').value='${c.id}';},100)">🔔 Напоминание</button>
+<!-- Инфо блок сверху — самое важное -->
+<div style="background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:16px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+    ${c.phone?`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">📞</span><div><div style="color:var(--text2);font-size:11px">Телефон</div><div style="font-weight:700">${c.phone}</div></div></div>`:''}
+    ${c.district?`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🏘️</span><div><div style="color:var(--text2);font-size:11px">Район</div><div style="font-weight:700">${c.district}</div></div></div>`:''}
+    ${c.address?`<div style="display:flex;align-items:center;gap:8px;grid-column:1/-1"><span style="font-size:18px">📍</span><div><div style="color:var(--text2);font-size:11px">Адрес</div><div style="font-weight:600">${c.address}</div></div></div>`:''}
+    ${c.note?`<div style="display:flex;align-items:center;gap:8px;grid-column:1/-1"><span style="font-size:18px">📝</span><div><div style="color:var(--text2);font-size:11px">Заметка</div><div>${c.note}</div></div></div>`:''}
+    ${c.custom_price?`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🏷️</span><div><div style="color:var(--text2);font-size:11px">Особая цена</div><div style="font-weight:700;color:var(--accent)">${c.custom_price} ₸/кг</div></div></div>`:''}
+    ${c.discount?`<div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🎁</span><div><div style="color:var(--text2);font-size:11px">Скидка</div><div style="font-weight:700;color:var(--purple)">${c.discount}%</div></div></div>`:''}
+  </div>
 </div>
-<!-- Инфо -->
-${c.address||c.phone||c.district||c.note?`<div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;display:flex;flex-wrap:wrap;gap:12px">
-${c.phone?`<div>📞 <b>${c.phone}</b></div>`:''}
-${c.district?`<div>🏘️ <b>${c.district}</b></div>`:''}
-${c.address?`<div>📍 ${c.address}</div>`:''}
-${c.note?`<div>📝 ${c.note}</div>`:''}
-</div>`:''}
-<!-- Карточки -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">
+<!-- Карточки статистики -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px">
 <div class="card"><div class="card-label">💰 Выручка</div><div class="card-value" style="font-size:18px">${fmt(totalRev)} ₸</div></div>
 <div class="card"><div class="card-label">📦 Куплено кг</div><div class="card-value" style="font-size:18px">${fmt(totalKg)}</div></div>
 <div class="card" style="border-color:${activeDebt?'var(--red)':'var(--green)'}"><div class="card-label">💳 Долг</div><div class="card-value" style="font-size:18px;color:${activeDebt?'var(--red)':'var(--green)'}">${activeDebt?fmt(activeDebt)+' ₸':'✅ Нет'}</div></div>
@@ -2657,7 +2654,7 @@ ${c.note?`<div>📝 ${c.note}</div>`:''}
 <div class="card"><div class="card-label">📊 Сред./неделю</div><div class="card-value" style="font-size:18px">${fmt(Math.round(avgWeekKg))}</div><div class="card-sub">${unit()}/нед</div></div>
 </div>
 <!-- Эта vs прошлая неделя -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
 <div style="background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center">
 <div style="font-size:12px;color:var(--text2);margin-bottom:4px">⚡ Эта неделя</div>
 <div style="font-size:28px;font-weight:800;color:var(--accent)">${fmt(thisWkKg)}</div>
@@ -2713,10 +2710,24 @@ return `<tr style="${i===weeks.length-1?'font-weight:700;background:var(--accent
 </table></div></div>
 <!-- Последние продажи -->
 <div class="section-label">🛒 История продаж</div>
-<div class="table-card"><div class="table-wrap"><table>
+<div class="table-card" style="margin-bottom:20px"><div class="table-wrap"><table>
 <thead><tr><th>Дата</th><th>Кг</th><th>Сумма</th><th>Оплата</th></tr></thead>
 <tbody>${cSales.slice(0,20).map(s=>`<tr><td>${dateStr(s.date)}</td><td>${s.qty} ${unit()}</td><td>${fmt(s.total)} ₸</td><td>${payBadge(s.payment)}</td></tr>`).join('')}</tbody>
-</table></div></div>`;
+</table></div></div>
+<!-- Действия — внизу -->
+<div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
+<div style="font-size:12px;color:var(--text2);margin-bottom:10px;font-weight:600">ДЕЙСТВИЯ</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px">
+${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-decoration:none">📞 Позвонить</a>`:''}
+${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#25D366">💬 WhatsApp</a>`:''}
+${c.address?`<a href="https://2gis.kz/search/${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ 2GIS</a>`:''}
+${c.address?`<a href="https://yandex.ru/maps/?text=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ Яндекс</a>`:''}
+<button class="btn btn-primary btn-sm" onclick="openQuickSaleForClient('${c.id}')">💰 Новая продажа</button>
+${activeDebtItems.length?`<button class="btn btn-warning btn-sm" onclick="openPayDebt('${activeDebtItems[0].id}')">✅ Оплатить долг</button>`:''}
+<button class="btn btn-ghost btn-sm" onclick="openDebtModal('','${c.id}')">📋 Добавить долг</button>
+<button class="btn btn-ghost btn-sm" onclick="openReminderModal();setTimeout(()=>{document.getElementById('rem-client').value='${c.id}';},100)">🔔 Напоминание</button>
+</div>
+</div>`;
 }
 function closeClientProfile() {
 const profilePage=document.getElementById('page-client-profile');
@@ -2790,13 +2801,14 @@ await loadAll(); renderAll(); toast('Удалено','success');
 },'Удалить клиента? Все его данные останутся в продажах.');
 }
 function openQuickSaleForClient(clientId) {
-openOverlay('qs-modal');
+resetQsForm();
 const c=clients.find(x=>x.id===clientId); if(!c) return;
 document.getElementById('qs-client-id').value=clientId;
 document.getElementById('qs-client-search').value=c.name+(c.shop?' / '+c.shop:'');
 const sel=document.getElementById('qs-selected-client');
 if(sel) sel.textContent='✓ '+c.name;
 if(c.custom_price) document.getElementById('qs-price').value=c.custom_price;
+openOverlay('qs-modal');
 }
 function dbtSearchClients() {
 const q=(document.getElementById('dbt-client-search').value||'').toLowerCase().trim();
@@ -2820,26 +2832,30 @@ function openDebtModal(editId='', prefillClientId='') {
 document.getElementById('dbt-edit-id').value=editId;
 document.getElementById('debt-modal-title').textContent=editId?'✏️ Редактировать долг':'📋 Новый долг';
 document.getElementById('dbt-save-btn').textContent=editId?'💾 Сохранить':'Сохранить';
+// Сброс клиента
 document.getElementById('dbt-client-search').value='';
 document.getElementById('dbt-client').value='';
 document.getElementById('dbt-client-name').textContent='';
 document.getElementById('dbt-client-drop').style.display='none';
-if(editId) {
-const d=debts.find(x=>x.id===editId); if(!d) return;
-const c=clients.find(x=>x.id===d.client_id);
-if(c){dbtSelectClient(c.id, c.name+(c.shop?' / '+c.shop:''));}
-document.getElementById('dbt-kg').value=d.kg||'';
-document.getElementById('dbt-amount').value=d.amount||'';
-document.getElementById('dbt-date').value=d.date||today();
-document.getElementById('dbt-note').value=d.note||'';
-} else {
-if(prefillClientId){const c=clients.find(x=>x.id===prefillClientId);if(c)dbtSelectClient(c.id,c.name+(c.shop?' / '+c.shop:''));}
+// Сброс полей
 document.getElementById('dbt-kg').value='';
 document.getElementById('dbt-amount').value='';
 document.getElementById('dbt-date').value=today();
 document.getElementById('dbt-note').value='';
-}
 openOverlay('debt-modal');
+// Заполняем после открытия
+if(editId) {
+const d=debts.find(x=>x.id===editId); if(!d) return;
+const c=clients.find(x=>x.id===d.client_id);
+if(c) dbtSelectClient(c.id, c.name+(c.shop?' / '+c.shop:''));
+document.getElementById('dbt-kg').value=d.kg||'';
+document.getElementById('dbt-amount').value=d.amount||'';
+document.getElementById('dbt-date').value=d.date||today();
+document.getElementById('dbt-note').value=d.note||'';
+} else if(prefillClientId) {
+const c=clients.find(x=>x.id===prefillClientId);
+if(c) dbtSelectClient(c.id, c.name+(c.shop?' / '+c.shop:''));
+}
 }
 let debtFilterPeriod='month';
 let salesPeriod='all';
