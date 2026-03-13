@@ -1766,18 +1766,31 @@ let qsPayMethod='cash';
 let charts={};
 let isSaving=false;
 async function withSaving(fn, btnId=null) {
-if(isSaving) return;
+if(isSaving) { toast('Подождите, идёт сохранение...','warning'); return; }
 isSaving=true;
+// Block all save/submit buttons in open modals
+const allBtns = [...document.querySelectorAll('.modal.open .btn-primary, .modal.open .btn-warning, .modal.open .btn-success, .modal.open .btn-danger')].filter(b=>!b.classList.contains('btn-ghost'));
+const openModals = document.querySelectorAll('.overlay.open .modal');
+const modalBtns = [];
+openModals.forEach(m=>{
+m.querySelectorAll('button:not(.modal-close):not(.btn-ghost)').forEach(b=>{
+modalBtns.push({el:b, text:b.textContent, disabled:b.disabled});
+b.disabled=true;
+b.textContent='⏳ Сохранение...';
+});
+});
 const btn = btnId ? document.getElementById(btnId) : null;
 const origText = btn?.textContent;
-if(btn) { btn.disabled=true; btn.textContent='Сохранение...'; }
-const timeout = setTimeout(()=>{ isSaving=false; if(btn){btn.disabled=false;btn.textContent=origText;} }, 10000);
+const timeout = setTimeout(()=>{
+isSaving=false;
+modalBtns.forEach(b=>{ b.el.disabled=b.disabled; b.el.textContent=b.text; });
+}, 10000);
 try { await fn(); }
 catch(e) { console.error('Save error:', e); toast('Ошибка сохранения','error'); }
 finally {
 clearTimeout(timeout);
 isSaving=false;
-if(btn) { btn.disabled=false; btn.textContent=origText; }
+modalBtns.forEach(b=>{ b.el.disabled=b.disabled; b.el.textContent=b.text; });
 }
 }
 const today=()=>new Date().toISOString().split('T')[0];
@@ -3367,7 +3380,8 @@ document.getElementById('rp-info').innerHTML = `
 <div style="color:var(--text2);font-size:13px">${r.category||''} · Ожидалась: <b>${dateStr(nextDate)}</b> ${daysLeft<0?'<span style="color:var(--red)">(просрочено на '+Math.abs(daysLeft)+' дн.)</span>':''}</div>`;
 openOverlay('recurring-pay-modal');
 }
-async function saveRecurring() {
+async function saveRecurring() { await withSaving(_saveRecurring); }
+async function _saveRecurring() {
 const id = document.getElementById('rec-edit-id').value;
 const name = document.getElementById('rec-name').value.trim();
 const amount = parseFloat(document.getElementById('rec-amount').value)||0;
@@ -3387,7 +3401,8 @@ if(error){toast('Ошибка: '+error.message,'error');return;}
 await loadAll(); renderAll(); closeOverlay('recurring-modal');
 toast(id?'Обновлено ✓':'Постоянный расход добавлен ✓','success');
 }
-async function saveRecurringPay() {
+async function saveRecurringPay() { await withSaving(_saveRecurringPay); }
+async function _saveRecurringPay() {
 const recurring_id = document.getElementById('rp-recurring-id').value;
 const amount = parseFloat(document.getElementById('rp-amount').value)||0;
 const paid_date = document.getElementById('rp-date').value||today();
@@ -3688,7 +3703,8 @@ document.getElementById('qc-phone').value='';
 document.getElementById('qc-type').value='retail';
 openOverlay('quick-client-modal');
 }
-async function saveQuickClient() {
+async function saveQuickClient() { await withSaving(_saveQuickClient); }
+async function _saveQuickClient() {
 const name=document.getElementById('qc-name').value.trim();
 if(!name){toast('Укажите имя','error');return;}
 const phone=document.getElementById('qc-phone').value||'';
@@ -4335,7 +4351,8 @@ document.getElementById('inv-item-min').value='';
 }
 openOverlay('inv-item-modal');
 }
-async function saveInvItem() {
+async function saveInvItem() { await withSaving(_saveInvItem); }
+async function _saveInvItem() {
 const name=document.getElementById('inv-item-name').value.trim();
 if(!name){toast('Укажите название','error');return;}
 const id=document.getElementById('inv-item-edit-id').value;
@@ -4364,7 +4381,8 @@ document.getElementById('inv-entry-title').textContent=titles[type]||'Движе
 const clientGroup=document.getElementById('inv-entry-client-group');
 if(clientGroup) clientGroup.style.display=(type==='exchange'||type==='bonus')?'block':'none';
 }
-async function saveInvEntry() {
+async function saveInvEntry() { await withSaving(_saveInvEntry); }
+async function _saveInvEntry() {
 const item_id=document.getElementById('inv-entry-item').value;
 const type=document.getElementById('inv-entry-type').value;
 const qty=parseFloat(document.getElementById('inv-entry-qty').value)||0;
