@@ -2475,6 +2475,7 @@ ${cDebt?`<div class="client-stat"><div class="client-stat-val" style="color:var(
 </div>
 <div style="display:flex;flex-direction:column;gap:4px">
 <button class="btn btn-ghost btn-sm" onclick="showClientDetail('${c.id}')">👁 Детали</button>
+${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">📲 Звонок</a>`:''}
 <button class="btn btn-ghost btn-sm" onclick="openClientModal('${c.id}')">✏️</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteClient('${c.id}')">🗑</button>
 </div>
