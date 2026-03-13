@@ -1476,8 +1476,9 @@ tbody tr:hover { background:#fafbff; }
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label">Себестоимость/<span id="qs-unit-label3">кг</span></label>
+        <label class="form-label">Себестоимость/<span id="qs-unit-label3">кг</span> <span id="qs-cost-hint" style="font-size:10px;color:var(--accent);font-weight:600"></span></label>
         <input type="number" class="form-input" id="qs-cost" placeholder="0">
+        <div id="qs-cost-info" style="font-size:10px;color:var(--text2);margin-top:3px"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Дата</label>
@@ -2276,7 +2277,26 @@ document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected'
 document.querySelector('.pay-opt[data-m="cash"]').classList.add('selected');
 renderQsChips();
 if(settings.price) document.getElementById('qs-price').value=settings.price;
-if(settings.cost) document.getElementById('qs-cost').value=settings.cost;
+// Авто-расчёт себестоимости: расходы месяца ÷ произведено кг за месяц
+const m=thisMonth();
+const monthExp=expenses.filter(e=>e.date?.startsWith(m)).reduce((a,e)=>a+e.amount,0);
+const monthProd=productions.filter(p=>p.date?.startsWith(m)).reduce((a,p)=>a+p.qty,0);
+const autoCost=monthProd>0?Math.round(monthExp/monthProd):0;
+const costField=document.getElementById('qs-cost');
+const costHint=document.getElementById('qs-cost-hint');
+const costInfo=document.getElementById('qs-cost-info');
+if(costField) {
+costField.value=autoCost||settings.cost||'';
+if(autoCost&&monthProd>0) {
+if(costHint) costHint.textContent='🤖 авто';
+if(costInfo) costInfo.textContent=`${fmt(monthExp)} ₸ расходов ÷ ${fmt(monthProd)} кг произведено`;
+costField.style.background='var(--accent-light)';
+} else {
+if(costHint) costHint.textContent='';
+if(costInfo) costInfo.textContent=monthProd===0?'Нет данных о производстве за месяц':'';
+costField.style.background='';
+}
+}
 }
 function selectQsPay(el,method) {
 qsPayMethod=method;
@@ -2580,9 +2600,29 @@ async function _saveClient() {
 const name=document.getElementById('cl-name').value.trim();
 if(!name){toast('Укажите имя','error');return;}
 const id=document.getElementById('cl-edit-id').value;
-// Check duplicate name (case-insensitive), skip self when editing
-const duplicate=clients.find(c=>c.id!==id && c.name.trim().toLowerCase()===name.toLowerCase());
-if(duplicate){toast(`Клиент "${duplicate.name}" уже существует!`,'error');return;}
+const phone=document.getElementById('cl-phone').value.replace(/\D/g,'')||'';
+const address=(document.getElementById('cl-address').value||'').trim().toLowerCase();
+const shop=(document.getElementById('cl-shop').value||'').trim().toLowerCase();
+// Check duplicates
+const others=clients.filter(c=>c.id!==id);
+const dupName=others.find(c=>c.name.trim().toLowerCase()===name.toLowerCase());
+const dupPhone=phone.length>=7?others.find(c=>(c.phone||'').replace(/\D/g,'')===phone&&phone):null;
+const dupAddr=address.length>4?others.find(c=>{
+const ca=(c.address||'').trim().toLowerCase();
+if(!ca||ca.length<4) return false;
+// simple similarity: one contains the other or share 70%+ words
+const wordsA=address.split(/\s+/), wordsB=ca.split(/\s+/);
+const common=wordsA.filter(w=>w.length>2&&wordsB.includes(w));
+return common.length>=2;
+}):null;
+const warnings=[];
+if(dupName) warnings.push(`👤 Имя: уже есть "${dupName.name}"`);
+if(dupPhone) warnings.push(`📞 Телефон совпадает с "${dupPhone.name}"`);
+if(dupAddr&&!dupName) warnings.push(`📍 Похожий адрес у "${dupAddr.name}"`);
+if(warnings.length) {
+const msg=`⚠️ Возможный дубль:\n${warnings.join('\n')}\n\nВсё равно сохранить?`;
+if(!confirm(msg)) return;
+}
 const data={name,shop:document.getElementById('cl-shop').value||'',phone:document.getElementById('cl-phone').value||'',type:document.getElementById('cl-type').value,address:document.getElementById('cl-address').value||'',discount:parseFloat(document.getElementById('cl-discount').value)||0,custom_price:parseFloat(document.getElementById('cl-price').value)||null,note:document.getElementById('cl-note').value||''};
 let error;
 if(id)({error}=await db.from('biz_clients').update(data).eq('id',id));
