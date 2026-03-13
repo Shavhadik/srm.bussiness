@@ -382,6 +382,7 @@ tbody tr:hover { background:#fafbff; }
   .search-results { width:calc(100vw - 40px); }
 }
 </style>
+<script src="https://api-maps.yandex.ru/2.1/?apikey=&lang=ru_RU" type="text/javascript"></script>
 </head>
 <body>
 
@@ -488,6 +489,9 @@ tbody tr:hover { background:#fafbff; }
     <div class="nav-item" onclick="goPage('reminders')">
       <div class="nav-icon">🔔</div> Напоминания
       <span class="nav-badge" id="badge-reminders" style="display:none">0</span>
+    </div>
+    <div class="nav-item" onclick="goPage('map')">
+      <div class="nav-icon">🗺️</div> Карта клиентов
     </div>
     <div class="nav-item" onclick="goPage('settings')">
       <div class="nav-icon">⚙️</div> Настройки
@@ -1477,6 +1481,41 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">⏰ Сегодня</div><div class="card-value" style="color:var(--yellow)" id="rem-today">0</div></div>
   </div>
   <div id="reminders-list"></div>
+</div>
+
+<div class="page" id="page-map">
+  <div class="page-header">
+    <div class="page-header-left"><h1>🗺️ Карта клиентов</h1><p>Все клиенты на карте</p></div>
+    <div class="page-header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="renderMap()">🔄 Обновить</button>
+    </div>
+  </div>
+  <div class="filters" style="margin-bottom:12px">
+    <select class="filter-input" id="map-filter-debt" onchange="renderMap()">
+      <option value="">Все клиенты</option>
+      <option value="debt">🔴 С долгом</option>
+      <option value="nodebt">🟢 Без долга</option>
+    </select>
+    <select class="filter-input" id="map-filter-district" onchange="renderMap()">
+      <option value="">Все районы</option>
+    </select>
+    <input type="text" class="filter-input" id="map-filter-search" placeholder="🔍 Поиск клиента..." oninput="renderMap()" style="width:200px">
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:12px;font-size:12px;flex-wrap:wrap">
+    <span>🟢 Без долга</span>
+    <span>🔴 Есть долг</span>
+    <span>⚫ Нет адреса</span>
+    <span id="map-no-addr-count" style="color:var(--text2)"></span>
+  </div>
+  <div id="ymap" style="width:100%;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:var(--bg)">
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:14px">
+      Загрузка карты...
+    </div>
+  </div>
+  <div id="map-clients-no-addr" style="margin-top:16px;display:none">
+    <div class="section-label">⚫ Клиенты без адреса</div>
+    <div id="map-no-addr-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px"></div>
+  </div>
 </div>
 
 <div class="overlay" id="qs-modal">
@@ -2590,6 +2629,8 @@ ${cDebt?`<div class="client-stat"><div class="client-stat-val" style="color:var(
 <div style="display:flex;flex-direction:column;gap:4px">
 <button class="btn btn-ghost btn-sm" onclick="showClientDetail('${c.id}')">👁 Профиль</button>
 ${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">📲 Звонок</a>`:''}
+${c.address?`<a href="https://2gis.kz/almaty/search/${encodeURIComponent(c.address)}/route?to=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">🗺️ 2GIS</a>`:''} 
+${c.address?`<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.address)}&rtt=auto" target="_blank" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">🗺️ Яндекс</a>`:''} 
 <button class="btn btn-ghost btn-sm" onclick="openClientModal('${c.id}')">✏️</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteClient('${c.id}')">🗑</button>
 </div>
@@ -2720,8 +2761,8 @@ return `<tr style="${i===weeks.length-1?'font-weight:700;background:var(--accent
 <div style="display:flex;flex-wrap:wrap;gap:8px">
 ${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-decoration:none">📞 Позвонить</a>`:''}
 ${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none;color:#25D366">💬 WhatsApp</a>`:''}
-${c.address?`<a href="https://2gis.kz/search/${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ 2GIS</a>`:''}
-${c.address?`<a href="https://yandex.ru/maps/?text=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ Яндекс</a>`:''}
+${c.address?`<a href="https://2gis.kz/almaty/search/${encodeURIComponent(c.address)}/route?to=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ 2GIS</a>`:''} 
+${c.address?`<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.address)}&rtt=auto" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ Яндекс</a>`:''}
 <button class="btn btn-primary btn-sm" onclick="openQuickSaleForClient('${c.id}')">💰 Новая продажа</button>
 ${activeDebtItems.length?`<button class="btn btn-warning btn-sm" onclick="openPayDebt('${activeDebtItems[0].id}')">✅ Оплатить долг</button>`:''}
 <button class="btn btn-ghost btn-sm" onclick="openDebtModal('','${c.id}')">📋 Добавить долг</button>
@@ -4957,6 +4998,112 @@ buildExpCategoryOptions('pf-cat');
 renderQsChips();
 populateInvSelects();
 }
+// ===== КАРТА КЛИЕНТОВ =====
+let ymapInstance=null;
+let ymapReady=false;
+function initYmap() {
+if(ymapReady) return Promise.resolve();
+return new Promise((resolve)=>{
+if(typeof ymaps==='undefined'){resolve();return;}
+ymaps.ready(()=>{ymapReady=true;resolve();});
+});
+}
+async function renderMap() {
+if(document.getElementById('page-map')?.classList.contains('active')===false) return;
+// Populate district filter
+const distSel=document.getElementById('map-filter-district');
+if(distSel){
+const districts=[...new Set(clients.map(c=>c.district).filter(Boolean))].sort();
+const cur=distSel.value;
+distSel.innerHTML='<option value="">Все районы</option>'+districts.map(d=>`<option value="${d}"${d===cur?' selected':''}>${d}</option>`).join('');
+}
+const debtF=document.getElementById('map-filter-debt')?.value||'';
+const distF=document.getElementById('map-filter-district')?.value||'';
+const searchF=(document.getElementById('map-filter-search')?.value||'').toLowerCase();
+let filtered=clients.filter(c=>{
+if(debtF==='debt'&&!debts.some(d=>d.client_id===c.id&&d.remaining>0)) return false;
+if(debtF==='nodebt'&&debts.some(d=>d.client_id===c.id&&d.remaining>0)) return false;
+if(distF&&c.district!==distF) return false;
+if(searchF&&!(c.name+' '+(c.shop||'')).toLowerCase().includes(searchF)) return false;
+return true;
+});
+const withAddr=filtered.filter(c=>c.address);
+const noAddr=filtered.filter(c=>!c.address);
+// Показываем клиентов без адреса
+const noAddrBlock=document.getElementById('map-clients-no-addr');
+const noAddrList=document.getElementById('map-no-addr-list');
+const noAddrCount=document.getElementById('map-no-addr-count');
+if(noAddrCount) noAddrCount.textContent=`(${noAddr.length} без адреса)`;
+if(noAddrBlock) noAddrBlock.style.display=noAddr.length?'block':'none';
+if(noAddrList) noAddrList.innerHTML=noAddr.map(c=>`
+<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer" onclick="showClientDetail('${c.id}')">
+<div style="font-weight:600">${c.name}</div>
+${c.phone?`<div style="color:var(--text2)">${c.phone}</div>`:''}
+</div>`).join('');
+if(typeof ymaps==='undefined'){
+document.getElementById('ymap').innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px;color:var(--text2)">
+<div style="font-size:40px">🗺️</div>
+<div>Карта недоступна — нет подключения к Яндекс API</div>
+<div style="font-size:12px">${withAddr.length} клиентов с адресом</div>
+</div>`;
+return;
+}
+await initYmap();
+// Создаём или очищаем карту
+if(!ymapInstance){
+ymapInstance=new ymaps.Map('ymap',{
+center:[43.238949,76.889709], // Алматы
+zoom:11,
+controls:['zoomControl','typeSelector','fullscreenControl']
+},{suppressMapOpenBlock:true});
+} else {
+ymapInstance.geoObjects.removeAll();
+}
+if(!withAddr.length){
+document.getElementById('ymap').style.display='flex';
+return;
+}
+// Геокодируем и ставим точки
+const geocodeNext=async(idx)=>{
+if(idx>=withAddr.length) return;
+const c=withAddr[idx];
+const hasDebt=debts.some(d=>d.client_id===c.id&&d.remaining>0);
+const debtAmt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+const color=hasDebt?'#ef4444':'#22c55e';
+const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+try {
+const res=await ymaps.geocode('Алматы, '+c.address,{results:1});
+const firstObj=res.geoObjects.get(0);
+if(!firstObj){geocodeNext(idx+1);return;}
+const coords=firstObj.geometry.getCoordinates();
+const placemark=new ymaps.Placemark(coords,{
+balloonContentHeader:`<b>${c.name}${c.shop?' / '+c.shop:''}</b>`,
+balloonContentBody:`
+${c.phone?`<div>📞 <a href="tel:${c.phone}">${c.phone}</a></div>`:''}
+${c.district?`<div>🏘️ ${c.district}</div>`:''}
+<div>📍 ${c.address}</div>
+${hasDebt?`<div style="color:#ef4444;font-weight:600;margin-top:4px">💳 Долг: ${fmt(debtAmt)} ₸</div>`:'<div style="color:#22c55e;margin-top:4px">✅ Долгов нет</div>'}
+<div style="margin-top:8px;display:flex;gap:6px">
+<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.address)}&rtt=auto" target="_blank" style="color:#4f6ef7">🗺️ Маршрут</a>
+</div>`,
+iconContent:initials
+},{
+preset:hasDebt?'islands#redStretchyIcon':'islands#greenStretchyIcon'
+});
+placemark.events.add('click',()=>{});
+ymapInstance.geoObjects.add(placemark);
+} catch(e){}
+// Геокодируем по одному с небольшой паузой чтобы не превысить лимит
+setTimeout(()=>geocodeNext(idx+1), 150);
+};
+geocodeNext(0);
+// Подгоняем вид под все точки после небольшой паузы
+setTimeout(()=>{
+if(ymapInstance.geoObjects.getLength()>0){
+ymapInstance.setBounds(ymapInstance.geoObjects.getBounds(),{checkZoomRange:true,zoomMargin:40});
+}
+},withAddr.length*160);
+}
 // ===== НАПОМИНАНИЯ =====
 const remTypeMap={general:'📌 Общее',call:'📞 Позвонить',debt:'💳 Долг',delivery:'🚚 Доставка',payment:'💰 Оплата'};
 function openReminderModal(editId='') {
@@ -5141,6 +5288,7 @@ document.getElementById('page-'+id).classList.add('active');
 event?.currentTarget?.classList.add('active');
 if(id==='analytics') setTimeout(renderAnalytics,100);
 if(id==='clients') closeClientProfile();
+if(id==='map') setTimeout(renderMap,100);
 if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open');
 }
 function openOverlay(id){document.getElementById(id).classList.add('open');}
