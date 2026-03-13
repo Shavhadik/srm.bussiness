@@ -2637,7 +2637,10 @@ ${c.address?`<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.addr
 </div>`;
 }).join('');
 }
+let _clientListScrollY=0;
 function showClientDetail(id) {
+// Запоминаем позицию скролла
+_clientListScrollY=window.scrollY||document.documentElement.scrollTop||0;
 const c=clients.find(x=>x.id===id); if(!c) return;
 const cSales=sales.filter(s=>s.client_id===id);
 const cDebts=debts.filter(d=>d.client_id===id);
@@ -2775,6 +2778,8 @@ const profilePage=document.getElementById('page-client-profile');
 const listSection=document.getElementById('clients-main-list');
 if(profilePage) profilePage.style.display='none';
 if(listSection) listSection.style.display='block';
+// Восстанавливаем позицию скролла
+requestAnimationFrame(()=>window.scrollTo({top:_clientListScrollY,behavior:'instant'}));
 }
 function openClientModal(id='') {
 document.getElementById('cl-edit-id').value=id;
