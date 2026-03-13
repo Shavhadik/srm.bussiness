@@ -4582,7 +4582,10 @@ function buildExpCategoryOptions(selectId) {
 const el=document.getElementById(selectId); if(!el) return;
 const all=expCategories.map(c=>c.name).sort();
 const curVal=el.value;
-el.innerHTML=(all.length?all:['Другое']).map(c=>`<option value="${c}">${c}</option>`).join('');
+// ef-cat and pf-cat are filters — need "Все категории" first
+const isFilter=selectId==='ef-cat'||selectId==='pf-cat';
+const emptyOpt=isFilter?'<option value="">Все категории</option>':'';
+el.innerHTML=emptyOpt+(all.length?all:['Другое']).map(c=>`<option value="${c}">${c}</option>`).join('');
 if(curVal) el.value=curVal;
 }
 async function addExpCategory(name) {
