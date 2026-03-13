@@ -411,6 +411,7 @@ tbody tr:hover { background:#fafbff; }
 <div class="topbar" id="topbar" style="display:none">
   <div style="position:relative;flex:1;max-width:400px">
     <input type="text" class="search-global" placeholder="🔍 Поиск клиентов, продаж, расходов..." id="global-search" oninput="globalSearch()" onfocus="showSearchResults()" onblur="setTimeout(hideSearchResults,200)">
+    <button id="global-search-clear" onclick="closeSearchResults()" style="display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:18px;line-height:1">✕</button>
     <div class="search-results" id="search-results"></div>
   </div>
   <div class="topbar-actions">
@@ -444,10 +445,6 @@ tbody tr:hover { background:#fafbff; }
   <div class="nav-item" onclick="goPage('debts')">
     <div class="nav-icon">📋</div> Долги
     <span class="nav-badge" id="badge-debts" style="display:none">0</span>
-  </div>
-  <div class="nav-item" onclick="goPage('konus')">
-    <div class="nav-icon">🔺</div> Конусы
-    <span class="nav-badge" id="badge-konus" style="display:none">0</span>
   </div>
   <div class="nav-item" onclick="goPage('exchanges')">
     <div class="nav-icon">🔄</div> Обмены
@@ -488,6 +485,10 @@ tbody tr:hover { background:#fafbff; }
     <div class="nav-item" onclick="goPage('history')">
       <div class="nav-icon">🕓</div> История
     </div>
+    <div class="nav-item" onclick="goPage('reminders')">
+      <div class="nav-icon">🔔</div> Напоминания
+      <span class="nav-badge" id="badge-reminders" style="display:none">0</span>
+    </div>
     <div class="nav-item" onclick="goPage('settings')">
       <div class="nav-icon">⚙️</div> Настройки
     </div>
@@ -524,7 +525,7 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-icon" style="background:#d1fae5">📅</div><div class="card-label">Выручка за месяц</div><div class="card-value" id="dc-month">0 ₸</div><div class="card-sub" id="dc-month-name"></div></div>
     <div class="card"><div class="card-icon" style="background:#e0f2fe">📊</div><div class="card-label">Средний чек</div><div class="card-value" id="dc-avg-check">0 ₸</div><div class="card-sub" id="dc-avg-check-sub"></div></div>
     <div class="card" onclick="goPage('debts')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">📋</div><div class="card-label">Долги клиентов</div><div class="card-value" style="color:var(--yellow)" id="dc-debts">0 ₸</div><div class="card-sub" id="dc-debts-count"></div></div>
-    <div class="card" onclick="goPage('konus')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">🔺</div><div class="card-label">Конусы (активных)</div><div class="card-value" style="color:var(--yellow)" id="dc-konus">0 ₸</div><div class="card-sub" id="dc-konus-count"></div></div>
+    <div class="card" style="display:none" onclick="goPage('konus')" style="cursor:pointer"><div class="card-icon" style="background:#fef3c7">🔺</div><div class="card-label">Конусы (активных)</div><div class="card-value" style="color:var(--yellow)" id="dc-konus">0 ₸</div><div class="card-sub" id="dc-konus-count"></div></div>
     <div class="card"><div class="card-icon" style="background:#ede9fe">📦</div><div class="card-label">Остаток склада</div><div class="card-value" id="dc-stock">0 кг</div><div class="card-sub">пряников</div></div>
     <div class="card"><div class="card-icon" style="background:#fee2e2">💸</div><div class="card-label">Расходы месяц</div><div class="card-value" style="color:var(--red)" id="dc-exp">0 ₸</div></div>
     <div class="card"><div class="card-icon" style="background:#d1fae5">📈</div><div class="card-label">Прибыль месяц</div><div class="card-value" id="dc-profit">0 ₸</div></div>
@@ -582,8 +583,8 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
     <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
-    <div class="card"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div>
-    <div class="card"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div>
+    <div class="card" style="display:none"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div>
+    <div class="card" style="display:none"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div>
   </div>
 
   
@@ -633,10 +634,49 @@ tbody tr:hover { background:#fafbff; }
       </table></div>
     </div>
   </div>
+
+  <!-- Таблица долгов -->
+  <div id="sales-debts-section" style="margin-top:16px">
+    <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <span>📋 Долги клиентов</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button id="sdbt-btn-today" class="btn btn-primary btn-sm" onclick="setSalesDebtFilter('today')">Сегодня</button>
+        <button id="sdbt-btn-week" class="btn btn-ghost btn-sm" onclick="setSalesDebtFilter('week')">Неделя</button>
+        <button id="sdbt-btn-all" class="btn btn-ghost btn-sm" onclick="setSalesDebtFilter('all')">Все активные</button>
+        <button class="btn btn-warning btn-sm" onclick="openDebtModal()">+ Долг</button>
+      </div>
+    </div>
+    <div id="sdbt-summary" style="font-size:12px;color:var(--text2);margin-bottom:8px"></div>
+    <div class="table-card">
+      <div class="table-wrap"><table>
+        <thead><tr><th>Дата</th><th>Клиент</th><th>Кг</th><th>Сумма</th><th>Остаток</th><th>Заметка</th><th></th></tr></thead>
+        <tbody id="sales-debts-tb"></tbody>
+      </table></div>
+    </div>
+  </div>
 </div>
 
 
 <div class="page" id="page-clients">
+<!-- Профиль клиента (встроенная страница) -->
+<div id="page-client-profile" style="display:none">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button class="btn btn-ghost btn-sm" onclick="closeClientProfile()" style="font-size:16px">← Назад</button>
+    <div id="cp-avatar" style="width:52px;height:52px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;flex-shrink:0"></div>
+    <div>
+      <div style="font-size:20px;font-weight:800" id="cp-name"></div>
+      <div style="font-size:13px;color:var(--text2)" id="cp-sub"></div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+      <a id="cp-call-btn" href="#" style="display:none;text-decoration:none" class="btn btn-ghost btn-sm">📞 Звонок</a>
+      <a id="cp-wa-btn" href="#" target="_blank" style="display:none;text-decoration:none;color:#25D366" class="btn btn-ghost btn-sm">💬 WA</a>
+      <button id="cp-edit-btn" class="btn btn-ghost btn-sm">✏️ Редактировать</button>
+    </div>
+  </div>
+  <div id="cp-body"></div>
+</div>
+<!-- Список клиентов -->
+<div id="clients-main-list">
   <div class="page-header">
     <div class="page-header-left"><h1>Клиенты</h1><p>База клиентов и статистика</p></div>
     <div class="page-header-actions">
@@ -659,7 +699,10 @@ tbody tr:hover { background:#fafbff; }
     <div id="cl-week-alert-list"></div>
   </div>
   <div class="filters">
-    <input type="text" class="filter-input" placeholder="🔍 Поиск по имени, магазину, телефону" id="cl-search" oninput="renderClients()" style="width:300px">
+    <div style="position:relative">
+      <input type="text" class="filter-input" placeholder="🔍 Поиск по имени, телефону, району" id="cl-search" oninput="renderClients();document.getElementById('cl-search-clear').style.display=this.value?'block':'none'" style="width:300px;padding-right:32px">
+      <button id="cl-search-clear" onclick="document.getElementById('cl-search').value='';renderClients();this.style.display='none'" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px">✕</button>
+    </div>
     <select class="filter-input" id="cl-type-filter" onchange="renderClients()">
       <option value="">Все типы</option>
       <option value="retail">Розница</option>
@@ -667,8 +710,12 @@ tbody tr:hover { background:#fafbff; }
       <option value="shop">Магазин</option>
       <option value="conusniy">Конусный</option>
     </select>
+    <select class="filter-input" id="cl-district-filter" onchange="renderClients()">
+      <option value="">Все районы</option>
+    </select>
   </div>
   <div id="clients-list"></div>
+</div>
 </div>
 
 
@@ -708,7 +755,7 @@ tbody tr:hover { background:#fafbff; }
 </div>
 
 
-<div class="page" id="page-konus">
+<div class="page" id="page-konus" style="display:none!important">
   <div class="page-header">
     <div class="page-header-left"><h1>🔺 Конусы</h1><p>Клиенты платят за прошлую партию</p></div>
     <div class="page-header-actions">
@@ -1069,6 +1116,7 @@ tbody tr:hover { background:#fafbff; }
     </div>
     <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="qc-name" placeholder="Имя клиента"></div>
     <div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-input" id="qc-phone" placeholder="+7 777..."></div>
+    <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="qc-address" placeholder="Улица, дом..."></div>
     <div class="form-group"><label class="form-label">Тип</label>
       <select class="form-select" id="qc-type">
         <option value="fl">ФЛ (физ. лицо)</option>
@@ -1410,10 +1458,26 @@ tbody tr:hover { background:#fafbff; }
 
 </div>
 
-
-
-
-<div class="overlay" id="qs-modal">
+<div class="page" id="page-reminders">
+  <div class="page-header">
+    <div class="page-header-left"><h1>🔔 Напоминания</h1><p>Заметки с датой и временем</p></div>
+    <div class="page-header-actions">
+      <button class="btn btn-primary" onclick="openReminderModal()">+ Напоминание</button>
+    </div>
+  </div>
+  <div id="reminders-overdue-block" style="display:none;margin-bottom:16px">
+    <div style="background:#fef2f2;border:1px solid var(--red);border-radius:12px;padding:14px 16px">
+      <div style="font-weight:700;color:var(--red);margin-bottom:8px">🚨 Просроченные</div>
+      <div id="reminders-overdue-list"></div>
+    </div>
+  </div>
+  <div class="cards" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
+    <div class="card"><div class="card-label">Всего</div><div class="card-value" id="rem-cnt">0</div></div>
+    <div class="card"><div class="card-label">🔴 Просрочено</div><div class="card-value" style="color:var(--red)" id="rem-overdue">0</div></div>
+    <div class="card"><div class="card-label">⏰ Сегодня</div><div class="card-value" style="color:var(--yellow)" id="rem-today">0</div></div>
+  </div>
+  <div id="reminders-list"></div>
+</div>
   <div class="modal modal-lg">
     <div class="modal-header">
       <div class="modal-title">⚡ Быстрая продажа</div>
@@ -1524,6 +1588,7 @@ tbody tr:hover { background:#fafbff; }
       </div>
     </div>
     <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="cl-address" placeholder="Улица, дом"></div>
+    <div class="form-group"><label class="form-label">Район</label><input type="text" class="form-input" id="cl-district" placeholder="Например: Алмалинский, Бостандык..."></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Скидка (%)</label><input type="number" class="form-input" id="cl-discount" placeholder="0" value="0"></div>
       <div class="form-group"><label class="form-label">Цена для клиента (₸/кг)</label><input type="number" class="form-input" id="cl-price" placeholder="Особая цена"></div>
@@ -1544,8 +1609,14 @@ tbody tr:hover { background:#fafbff; }
       <button class="modal-close" onclick="closeOverlay('debt-modal')">✕</button>
     </div>
     <input type="hidden" id="dbt-edit-id">
+    <input type="hidden" id="dbt-client">
     <div class="form-group"><label class="form-label">Клиент <span style="color:var(--red)">*</span></label>
-      <select class="form-select" id="dbt-client"></select>
+      <div style="position:relative">
+        <input type="text" class="form-input" id="dbt-client-search" placeholder="🔍 Поиск клиента..." oninput="dbtSearchClients()" autocomplete="off">
+        <button onclick="document.getElementById('dbt-client-search').value='';document.getElementById('dbt-client').value='';document.getElementById('dbt-client-name').textContent='';document.getElementById('dbt-client-drop').style.display='none'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px">✕</button>
+      </div>
+      <div id="dbt-client-drop" style="display:none;position:absolute;z-index:999;background:var(--white);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;width:calc(100% - 48px);box-shadow:0 4px 20px rgba(0,0,0,0.12)"></div>
+      <div id="dbt-client-name" style="font-size:12px;color:var(--accent);font-weight:600;margin-top:4px"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Кг товара</label><input type="number" class="form-input" id="dbt-kg" placeholder="0" step="0.1"></div>
@@ -1591,9 +1662,10 @@ tbody tr:hover { background:#fafbff; }
 <div class="overlay" id="exch-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <div class="modal-title">🔄 Обмен товара</div>
+      <div class="modal-title" id="exch-modal-title">🔄 Обмен товара</div>
       <button class="modal-close" onclick="closeOverlay('exch-modal')">✕</button>
     </div>
+    <input type="hidden" id="exch-edit-id">
     <div class="form-group"><label class="form-label">Клиент</label><select class="form-select" id="exch-client"></select></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Кг к обмену</label><input type="number" class="form-input" id="exch-kg-inp" placeholder="0" step="0.1"></div>
@@ -1603,7 +1675,7 @@ tbody tr:hover { background:#fafbff; }
     <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="exch-date"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeOverlay('exch-modal')">Отмена</button>
-      <button class="btn btn-warning" onclick="saveExchange()">Сохранить</button>
+      <button class="btn btn-warning" id="exch-save-btn" onclick="saveExchange()">Сохранить</button>
     </div>
   </div>
 </div>
@@ -1741,18 +1813,41 @@ tbody tr:hover { background:#fafbff; }
 </div>
 
 
-<div class="overlay" id="cl-detail-modal">
-  <div class="modal modal-lg">
+<div class="overlay" id="reminder-modal">
+  <div class="modal modal-sm">
     <div class="modal-header">
-      <div style="display:flex;align-items:center;gap:10px;flex:1">
-        <div class="modal-title" id="cl-detail-title">Клиент</div>
-        <a id="cl-detail-phone-link" href="#" style="display:none;font-size:22px;text-decoration:none" title="Позвонить">📲</a>
-      </div>
-      <button class="modal-close" onclick="closeOverlay('cl-detail-modal')">✕</button>
+      <div class="modal-title" id="reminder-modal-title">🔔 Напоминание</div>
+      <button class="modal-close" onclick="closeOverlay('reminder-modal')">✕</button>
     </div>
-    <div id="cl-detail-body" style="max-height:75vh;overflow-y:auto;padding-right:4px"></div>
+    <input type="hidden" id="rem-edit-id">
+    <div class="form-group"><label class="form-label">Текст напоминания</label>
+      <textarea class="form-input" id="rem-text" placeholder="Что нужно сделать..." rows="3" style="resize:vertical"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Дата</label><input type="date" class="form-input" id="rem-date"></div>
+      <div class="form-group"><label class="form-label">Время</label><input type="time" class="form-input" id="rem-time" value="09:00"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Клиент (необязательно)</label>
+      <select class="form-select" id="rem-client">
+        <option value="">— Без клиента —</option>
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Тип</label>
+      <select class="form-select" id="rem-type">
+        <option value="general">📌 Общее</option>
+        <option value="call">📞 Позвонить</option>
+        <option value="debt">💳 Долг</option>
+        <option value="delivery">🚚 Доставка</option>
+        <option value="payment">💰 Оплата</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeOverlay('reminder-modal')">Отмена</button>
+      <button class="btn btn-primary" id="rem-save-btn" onclick="saveReminder()">Сохранить</button>
+    </div>
   </div>
 </div>
+
 
 <script>const SUPABASE_URL = 'https://mdqbgcvxiwqvseanzpbx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_zlfDYgzf7oIdXrfJG7327Q_O1gUQJTm';
@@ -1762,6 +1857,7 @@ let sales=[], productions=[], debts=[], debtPay=[], expenses=[], clients=[], exc
 let invItems=[], invEntries=[], purchases=[], suppliers=[], expCategories=[], purCategories=[], recurringExpenses=[], recurringPayments=[];
 let konusSales=[], konusPay=[];
 let recipeItems=[], historyLog=[];
+let reminders=[];
 let qsPayMethod='cash';
 let charts={};
 let isSaving=false;
@@ -1820,6 +1916,7 @@ db.from('biz_history').select('*').order('created_at',{ascending:false}).limit(5
 db.from('biz_pur_categories').select('*').order('name'),
 db.from('biz_recurring_expenses').select('*').order('name'),
 db.from('biz_recurring_payments').select('*').order('paid_date',{ascending:false}),
+db.from('biz_reminders').select('*').order('remind_at',{ascending:true}),
 ]);
 sales=results[0].data||[]; productions=results[1].data||[]; debts=results[2].data||[];
 debtPay=results[3].data||[]; expenses=results[4].data||[]; clients=results[5].data||[];
@@ -1830,6 +1927,7 @@ recipeItems=results[15].data||[]; historyLog=results[16].data||[];
 purCategories=results[17]?.data||[];
 recurringExpenses=results[18]?.data||[];
 recurringPayments=results[19]?.data||[];
+reminders=results[20]?.data||[];
 const s={}; (results[7].data||[]).forEach(x=>s[x.key]=x.value);
 settings=s; applySettings();
 }
@@ -1843,7 +1941,7 @@ function renderAll() {
 const fns=[renderDashboard,renderSalesPage,renderClients,renderDebts,renderExchanges,
 renderExpenses,renderWarehouse,renderInventory,renderPurchases,renderSuppliers,
 renderKonus,renderRecipe,renderRentab,filterHistory,renderExpCatSettings,
-renderPurCatSettings,renderTopClients,renderRecurring,populateSelects,updateBadges];
+renderPurCatSettings,renderTopClients,renderRecurring,populateSelects,updateBadges,renderReminders];
 fns.forEach(fn=>{try{fn();}catch(e){console.error('renderAll error in',fn.name,e);}});
 document.getElementById('dash-date-str').textContent = new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 checkStockWarning();
@@ -2099,6 +2197,11 @@ return `<tr>
 } else {
 retBlock.style.display='none';
 }
+}
+// Таблица долгов
+const salesDebtsTb=document.getElementById('sales-debts-tb');
+if(salesDebtsTb) {
+renderSalesDebtsTable();
 }
 renderSalesTable();
 }
@@ -2386,9 +2489,18 @@ renderQsChips();
 function renderClients() {
 const q=document.getElementById('cl-search')?.value?.toLowerCase()||'';
 const tf=document.getElementById('cl-type-filter')?.value||'';
+const df=document.getElementById('cl-district-filter')?.value||'';
+// Populate district dropdown
+const districtSel=document.getElementById('cl-district-filter');
+if(districtSel){
+const districts=[...new Set(clients.map(c=>c.district).filter(Boolean))].sort();
+const curVal=districtSel.value;
+districtSel.innerHTML='<option value="">Все районы</option>'+districts.map(d=>`<option value="${d}" ${d===curVal?'selected':''}>${d}</option>`).join('');
+}
 let list=clients;
-if(q) list=list.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.phone||'')).toLowerCase().includes(q));
+if(q) list=list.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.phone||'')+' '+(c.district||'')+' '+(c.address||'')).toLowerCase().includes(q));
 if(tf) list=list.filter(c=>c.type===tf);
+if(df) list=list.filter(c=>c.district===df);
 const withDebt=new Set(debts.filter(d=>d.remaining>0).map(d=>d.client_id)).size;
 const withExch=clients.filter(c=>exchanges.some(e=>e.client_id===c.id&&!e.resolved)).length;
 setText('cl-total',clients.length);
@@ -2446,12 +2558,12 @@ const weekAlert=lastWkKg>0&&weekDiff<0;
 const typeMap={retail:'Розница',wholesale:'Оптовик',shop:'Магазин',conusniy:'Конусный'};
 const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 return `<div class="client-row">
-<div class="client-avatar">${initials}</div>
+<div class="client-avatar" onclick="showClientDetail('${c.id}')" style="cursor:pointer;transition:transform 0.15s" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Открыть профиль">${initials}</div>
 <div class="client-info">
-<div class="client-name">${c.name}${c.shop?` <span style="font-weight:400;color:var(--text2);font-size:12px">/ ${c.shop}</span>`:''}</div>
+<div class="client-name" style="cursor:pointer" onclick="showClientDetail('${c.id}')">${c.name}${c.shop?` <span style="font-weight:400;color:var(--text2);font-size:12px">/ ${c.shop}</span>`:''}</div>
 <div class="client-meta">
 ${c.phone?`📞 ${c.phone} · `:''}
-${c.address?`📍 ${c.address} · `:''}
+${c.district?`📍 ${c.district}${c.address?' · '+c.address:''} · `:c.address?`📍 ${c.address} · `:''}
 <span class="badge badge-gray" style="font-size:10px">${typeMap[c.type]||''}</span>
 ${c.discount?`<span class="badge badge-purple" style="font-size:10px">Скидка ${c.discount}%</span>`:''}
 </div>
@@ -2474,7 +2586,7 @@ ${weekDiff>0?'▲ +':'▼ '}${Math.abs(weekDiff).toFixed(1)} ${unit()}
 ${cDebt?`<div class="client-stat"><div class="client-stat-val" style="color:var(--red)">${fmt(cDebt)} ₸</div><div class="client-stat-lbl">Долг</div></div>`:''}
 </div>
 <div style="display:flex;flex-direction:column;gap:4px">
-<button class="btn btn-ghost btn-sm" onclick="showClientDetail('${c.id}')">👁 Детали</button>
+<button class="btn btn-ghost btn-sm" onclick="showClientDetail('${c.id}')">👁 Профиль</button>
 ${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">📲 Звонок</a>`:''}
 <button class="btn btn-ghost btn-sm" onclick="openClientModal('${c.id}')">✏️</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteClient('${c.id}')">🗑</button>
@@ -2502,40 +2614,66 @@ const lastWkKg=weeklyKg[weeklyKg.length-2];
 const weekDiff=thisWkKg-lastWkKg;
 const salePrice=parseFloat(settings.price)||0;
 const missedRevenue=lastWkKg>thisWkKg?((lastWkKg-thisWkKg)*salePrice):0;
-document.getElementById('cl-detail-title').textContent=c.name+(c.shop?' / '+c.shop:'');
-const phoneLink=document.getElementById('cl-detail-phone-link');
-if(phoneLink){
-if(c.phone){phoneLink.href='tel:'+c.phone;phoneLink.style.display='inline';}
-else phoneLink.style.display='none';
-}
-document.getElementById('cl-detail-body').innerHTML=`
-<!-- Карточки -->
-<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px">
-<div class="card"><div class="card-label">Выручка</div><div class="card-value" style="font-size:18px">${fmt(totalRev)} ₸</div></div>
-<div class="card"><div class="card-label">Куплено кг</div><div class="card-value" style="font-size:18px">${fmt(totalKg)}</div></div>
-<div class="card" style="border-color:${activeDebt?'var(--red)':'var(--green)'}"><div class="card-label">Долг сейчас</div><div class="card-value" style="font-size:18px;color:${activeDebt?'var(--red)':'var(--green)'}">${activeDebt?fmt(activeDebt)+' ₸':'✅ Нет'}</div></div>
-<div class="card"><div class="card-label">Вернул долгов</div><div class="card-value" style="font-size:18px;color:var(--green)">${fmt(totalDebtPaid)} ₸</div></div>
+const activeDebtItems=cDebts.filter(d=>d.remaining>0);
+const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+// Показываем страницу профиля, скрываем список
+const profilePage=document.getElementById('page-client-profile');
+const listSection=document.getElementById('clients-main-list');
+if(profilePage) profilePage.style.display='block';
+if(listSection) listSection.style.display='none';
+// Заголовок
+document.getElementById('cp-avatar').textContent=initials;
+document.getElementById('cp-name').textContent=c.name+(c.shop?' / '+c.shop:'');
+document.getElementById('cp-sub').textContent=[c.district,c.address,c.phone].filter(Boolean).join(' · ');
+const callBtn=document.getElementById('cp-call-btn');
+const waBtn=document.getElementById('cp-wa-btn');
+const editBtn=document.getElementById('cp-edit-btn');
+if(callBtn){if(c.phone){callBtn.href='tel:'+c.phone;callBtn.style.display='inline-flex';}else callBtn.style.display='none';}
+if(waBtn){if(c.phone){waBtn.href='https://wa.me/'+c.phone.replace(/\D/g,'');waBtn.style.display='inline-flex';}else waBtn.style.display='none';}
+if(editBtn) editBtn.onclick=()=>openClientModal(c.id);
+document.getElementById('cp-body').innerHTML=`
+<!-- Кнопки действий -->
+<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+${c.address?`<a href="https://2gis.kz/search/${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ 2GIS</a>`:''}
+${c.address?`<a href="https://yandex.ru/maps/?text=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🗺️ Яндекс</a>`:''}
+<button class="btn btn-primary btn-sm" onclick="openQuickSaleForClient('${c.id}')">💰 Продажа</button>
+${activeDebtItems.length?`<button class="btn btn-warning btn-sm" onclick="openPayDebt('${activeDebtItems[0].id}')">✅ Оплатить долг</button>`:''}
+<button class="btn btn-ghost btn-sm" onclick="openDebtModal('','${c.id}')">📋 Добавить долг</button>
+<button class="btn btn-ghost btn-sm" onclick="openReminderModal();setTimeout(()=>{document.getElementById('rem-client').value='${c.id}';},100)">🔔 Напоминание</button>
 </div>
-
+<!-- Инфо -->
+${c.address||c.phone||c.district||c.note?`<div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;display:flex;flex-wrap:wrap;gap:12px">
+${c.phone?`<div>📞 <b>${c.phone}</b></div>`:''}
+${c.district?`<div>🏘️ <b>${c.district}</b></div>`:''}
+${c.address?`<div>📍 ${c.address}</div>`:''}
+${c.note?`<div>📝 ${c.note}</div>`:''}
+</div>`:''}
+<!-- Карточки -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px">
+<div class="card"><div class="card-label">💰 Выручка</div><div class="card-value" style="font-size:18px">${fmt(totalRev)} ₸</div></div>
+<div class="card"><div class="card-label">📦 Куплено кг</div><div class="card-value" style="font-size:18px">${fmt(totalKg)}</div></div>
+<div class="card" style="border-color:${activeDebt?'var(--red)':'var(--green)'}"><div class="card-label">💳 Долг</div><div class="card-value" style="font-size:18px;color:${activeDebt?'var(--red)':'var(--green)'}">${activeDebt?fmt(activeDebt)+' ₸':'✅ Нет'}</div></div>
+<div class="card"><div class="card-label">✅ Вернул долгов</div><div class="card-value" style="font-size:18px;color:var(--green)">${fmt(totalDebtPaid)} ₸</div></div>
+<div class="card"><div class="card-label">📊 Сред./неделю</div><div class="card-value" style="font-size:18px">${fmt(Math.round(avgWeekKg))}</div><div class="card-sub">${unit()}/нед</div></div>
+</div>
 <!-- Эта vs прошлая неделя -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
 <div style="background:var(--accent-light);border:2px solid var(--accent);border-radius:12px;padding:14px;text-align:center">
 <div style="font-size:12px;color:var(--text2);margin-bottom:4px">⚡ Эта неделя</div>
-<div style="font-size:26px;font-weight:800;color:var(--accent)">${fmt(thisWkKg)}</div>
+<div style="font-size:28px;font-weight:800;color:var(--accent)">${fmt(thisWkKg)}</div>
 <div style="font-size:12px;color:var(--text2)">${unit()}</div>
 </div>
 <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
 <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Прошлая неделя</div>
-<div style="font-size:26px;font-weight:800;color:var(--text2)">${fmt(lastWkKg)}</div>
+<div style="font-size:28px;font-weight:800;color:var(--text2)">${fmt(lastWkKg)}</div>
 <div style="font-size:12px;color:var(--text2)">${unit()}</div>
 </div>
 </div>
 ${weekDiff!==0&&lastWkKg>0?`<div style="border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:13px;font-weight:600;background:${weekDiff<0?'var(--red-light)':'var(--green-light)'};color:${weekDiff<0?'var(--red)':'var(--green)'}">
 ${weekDiff<0?`⚠️ Взял на ${Math.abs(weekDiff).toFixed(1)} ${unit()} меньше — недополучено ~${fmt(Math.round(missedRevenue))} ₸`:`📈 Взял на ${weekDiff.toFixed(1)} ${unit()} больше — +${fmt(Math.round(Math.abs(weekDiff)*salePrice))} ₸`}
 </div>`:''}
-
 <!-- История долгов -->
-${cDebts.length?`<div class="section-label">📋 История долгов</div>
+${cDebts.length?`<div class="section-label">📋 Долги</div>
 <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px">
 ${cDebts.sort((a,b)=>b.date>a.date?1:-1).map(d=>{
 const pays=cDebtPay.filter(p=>p.debt_id===d.id).sort((a,b)=>a.date>b.date?1:-1);
@@ -2544,30 +2682,24 @@ const isActive=d.remaining>0;
 const daysPassed=Math.round((new Date()-new Date(d.date))/(1000*60*60*24));
 return `<div style="border:1px solid ${isActive?'var(--red)':'var(--border)'};border-radius:12px;padding:12px;background:${isActive?'var(--red-light)':'var(--bg)'}">
 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-<div>
-<div style="font-weight:700;font-size:14px">${fmt(d.amount)} ₸ <span style="font-size:11px;color:var(--text2)">от ${dateStr(d.date)}</span></div>
-<div style="font-size:11px;color:var(--text2)">${daysPassed} дней назад${d.note?' · '+d.note:''}</div>
-</div>
-<div style="text-align:right">
-${isActive?`<span style="font-size:12px;font-weight:700;color:var(--red)">Осталось: ${fmt(d.remaining)} ₸</span>`:`<span style="font-size:12px;font-weight:700;color:var(--green)">✅ Погашен</span>`}
-</div>
-</div>
+<div><div style="font-weight:700;font-size:14px">${fmt(d.amount)} ₸ <span style="font-size:11px;color:var(--text2)">от ${dateStr(d.date)}</span></div>
+<div style="font-size:11px;color:var(--text2)">${daysPassed} дней назад${d.note?' · '+d.note:''}</div></div>
+<div style="text-align:right;display:flex;flex-direction:column;gap:4px">
+${isActive?`<span style="font-size:12px;font-weight:700;color:var(--red)">Осталось: ${fmt(d.remaining)} ₸</span><button class="btn btn-success btn-sm" onclick="openPayDebt('${d.id}')">✓ Оплатить</button>`:`<span style="font-size:12px;font-weight:700;color:var(--green)">✅ Погашен</span>`}
+</div></div>
 ${pays.length?`<div style="border-top:1px solid ${isActive?'rgba(239,68,68,0.2)':'var(--border)'};padding-top:8px">
-<div style="font-size:11px;color:var(--text2);margin-bottom:4px">Оплаты:</div>
 ${pays.map(p=>`<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">
 <span style="color:var(--text2)">${dateStr(p.date)} · ${p.payment==='cash'?'💵 Нал':p.payment==='kaspi'?'🔴 Каспи':'📱 QR'}</span>
 <span style="font-weight:600;color:var(--green)">+${fmt(p.amount)} ₸</span>
-</div>`).join('')}
-</div>`:''}
+</div>`).join('')}</div>`:''}
 <div style="margin-top:8px;background:var(--bg);border-radius:6px;height:6px;overflow:hidden">
-<div style="background:${isActive?'var(--red)':'var(--green)'};height:100%;width:${Math.min(100,Math.round(totalPaid/d.amount*100))}%;border-radius:6px;transition:width 0.3s"></div>
+<div style="background:${isActive?'var(--red)':'var(--green)'};height:100%;width:${Math.min(100,Math.round(totalPaid/d.amount*100))}%;border-radius:6px"></div>
 </div>
 <div style="font-size:10px;color:var(--text2);margin-top:2px">${Math.round(totalPaid/d.amount*100)}% погашено</div>
 </div>`;}).join('')}
 </div>`:''}
-
 <!-- По неделям -->
-<div class="section-label">По неделям (последние 8 недель)</div>
+<div class="section-label">📅 По неделям (последние 8)</div>
 <div class="table-card" style="margin-bottom:16px"><div class="table-wrap"><table>
 <thead><tr><th>Неделя с</th><th>Кг</th><th>Выручка</th><th>Тренд</th></tr></thead>
 <tbody>${weeks.map((w,i)=>{
@@ -2579,14 +2711,18 @@ return `<tr style="${i===weeks.length-1?'font-weight:700;background:var(--accent
 <td>${dateStr(w)}</td><td>${kg?fmt(kg)+' '+unit():'—'}</td><td>${rev?fmt(rev)+' ₸':'—'}</td><td>${trend}</td>
 </tr>`;}).join('')}</tbody>
 </table></div></div>
-
 <!-- Последние продажи -->
-<div class="section-label">Последние продажи</div>
+<div class="section-label">🛒 История продаж</div>
 <div class="table-card"><div class="table-wrap"><table>
 <thead><tr><th>Дата</th><th>Кг</th><th>Сумма</th><th>Оплата</th></tr></thead>
-<tbody>${cSales.slice(0,15).map(s=>`<tr><td>${dateStr(s.date)}</td><td>${s.qty} ${unit()}</td><td>${fmt(s.total)} ₸</td><td>${payBadge(s.payment)}</td></tr>`).join('')}</tbody>
+<tbody>${cSales.slice(0,20).map(s=>`<tr><td>${dateStr(s.date)}</td><td>${s.qty} ${unit()}</td><td>${fmt(s.total)} ₸</td><td>${payBadge(s.payment)}</td></tr>`).join('')}</tbody>
 </table></div></div>`;
-openOverlay('cl-detail-modal');
+}
+function closeClientProfile() {
+const profilePage=document.getElementById('page-client-profile');
+const listSection=document.getElementById('clients-main-list');
+if(profilePage) profilePage.style.display='none';
+if(listSection) listSection.style.display='block';
 }
 function openClientModal(id='') {
 document.getElementById('cl-edit-id').value=id;
@@ -2598,11 +2734,12 @@ document.getElementById('cl-shop').value=c.shop||'';
 document.getElementById('cl-phone').value=c.phone||'';
 document.getElementById('cl-type').value=c.type||'retail';
 document.getElementById('cl-address').value=c.address||'';
+document.getElementById('cl-district').value=c.district||'';
 document.getElementById('cl-discount').value=c.discount||0;
 document.getElementById('cl-price').value=c.custom_price||'';
 document.getElementById('cl-note').value=c.note||'';
 } else {
-['cl-name','cl-shop','cl-phone','cl-address','cl-note'].forEach(i=>document.getElementById(i).value='');
+['cl-name','cl-shop','cl-phone','cl-address','cl-district','cl-note'].forEach(i=>document.getElementById(i).value='');
 document.getElementById('cl-discount').value='0';
 document.getElementById('cl-price').value='';
 document.getElementById('cl-type').value='retail';
@@ -2637,7 +2774,7 @@ if(warnings.length) {
 const msg=`⚠️ Возможный дубль:\n${warnings.join('\n')}\n\nВсё равно сохранить?`;
 if(!confirm(msg)) return;
 }
-const data={name,shop:document.getElementById('cl-shop').value||'',phone:document.getElementById('cl-phone').value||'',type:document.getElementById('cl-type').value,address:document.getElementById('cl-address').value||'',discount:parseFloat(document.getElementById('cl-discount').value)||0,custom_price:parseFloat(document.getElementById('cl-price').value)||null,note:document.getElementById('cl-note').value||''};
+const data={name,shop:document.getElementById('cl-shop').value||'',phone:document.getElementById('cl-phone').value||'',type:document.getElementById('cl-type').value,address:document.getElementById('cl-address').value||'',district:document.getElementById('cl-district').value||'',discount:parseFloat(document.getElementById('cl-discount').value)||0,custom_price:parseFloat(document.getElementById('cl-price').value)||null,note:document.getElementById('cl-note').value||''};
 let error;
 if(id)({error}=await db.from('biz_clients').update(data).eq('id',id));
 else({error}=await db.from('biz_clients').insert(data));
@@ -2652,18 +2789,51 @@ await db.from('biz_clients').delete().eq('id',id);
 await loadAll(); renderAll(); toast('Удалено','success');
 },'Удалить клиента? Все его данные останутся в продажах.');
 }
-function openDebtModal(editId='') {
+function openQuickSaleForClient(clientId) {
+openOverlay('qs-modal');
+const c=clients.find(x=>x.id===clientId); if(!c) return;
+document.getElementById('qs-client-id').value=clientId;
+document.getElementById('qs-client-search').value=c.name+(c.shop?' / '+c.shop:'');
+const sel=document.getElementById('qs-selected-client');
+if(sel) sel.textContent='✓ '+c.name;
+if(c.custom_price) document.getElementById('qs-price').value=c.custom_price;
+}
+function dbtSearchClients() {
+const q=(document.getElementById('dbt-client-search').value||'').toLowerCase().trim();
+const drop=document.getElementById('dbt-client-drop');
+if(!q){drop.style.display='none';return;}
+const matches=clients.filter(c=>(c.name+' '+(c.phone||'')+' '+(c.shop||'')).toLowerCase().includes(q)).slice(0,8);
+if(!matches.length){drop.style.display='none';return;}
+drop.innerHTML=matches.map(c=>`<div onclick="dbtSelectClient('${c.id}','${c.name.replace(/'/g,"\\'")}${c.shop?' / '+c.shop:''}')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+<div style="font-weight:600">${c.name}${c.shop?' / '+c.shop:''}</div>
+<div style="font-size:11px;color:var(--text2)">${c.phone||''}</div>
+</div>`).join('');
+drop.style.display='block';
+}
+function dbtSelectClient(id, name) {
+document.getElementById('dbt-client').value=id;
+document.getElementById('dbt-client-search').value=name;
+document.getElementById('dbt-client-name').textContent='✓ '+name;
+document.getElementById('dbt-client-drop').style.display='none';
+}
+function openDebtModal(editId='', prefillClientId='') {
 document.getElementById('dbt-edit-id').value=editId;
 document.getElementById('debt-modal-title').textContent=editId?'✏️ Редактировать долг':'📋 Новый долг';
 document.getElementById('dbt-save-btn').textContent=editId?'💾 Сохранить':'Сохранить';
+document.getElementById('dbt-client-search').value='';
+document.getElementById('dbt-client').value='';
+document.getElementById('dbt-client-name').textContent='';
+document.getElementById('dbt-client-drop').style.display='none';
 if(editId) {
 const d=debts.find(x=>x.id===editId); if(!d) return;
-setTimeout(()=>{document.getElementById('dbt-client').value=d.client_id||'';},50);
+const c=clients.find(x=>x.id===d.client_id);
+if(c){dbtSelectClient(c.id, c.name+(c.shop?' / '+c.shop:''));}
 document.getElementById('dbt-kg').value=d.kg||'';
 document.getElementById('dbt-amount').value=d.amount||'';
 document.getElementById('dbt-date').value=d.date||today();
 document.getElementById('dbt-note').value=d.note||'';
 } else {
+if(prefillClientId){const c=clients.find(x=>x.id===prefillClientId);if(c)dbtSelectClient(c.id,c.name+(c.shop?' / '+c.shop:''));}
 document.getElementById('dbt-kg').value='';
 document.getElementById('dbt-amount').value='';
 document.getElementById('dbt-date').value=today();
@@ -2673,6 +2843,45 @@ openOverlay('debt-modal');
 }
 let debtFilterPeriod='month';
 let salesPeriod='all';
+let salesDebtFilter='today';
+function setSalesDebtFilter(p) {
+salesDebtFilter=p;
+['today','week','all'].forEach(x=>{
+const b=document.getElementById('sdbt-btn-'+x);
+if(b) b.className=x===p?'btn btn-primary btn-sm':'btn btn-ghost btn-sm';
+});
+renderSalesDebtsTable();
+}
+function renderSalesDebtsTable() {
+const tb=document.getElementById('sales-debts-tb');
+const summary=document.getElementById('sdbt-summary');
+if(!tb) return;
+const t=today(), wS=weekStart();
+let filtered=debts.filter(d=>d.remaining>0);
+if(salesDebtFilter==='today') filtered=filtered.filter(d=>d.date===t);
+else if(salesDebtFilter==='week') filtered=filtered.filter(d=>d.date>=wS);
+filtered=filtered.sort((a,b)=>b.date>a.date?1:-1);
+const totalKg=filtered.reduce((a,d)=>a+d.kg,0);
+const totalAmt=filtered.reduce((a,d)=>a+d.remaining,0);
+if(summary) summary.textContent=filtered.length?`${filtered.length} клиентов · ${fmt(totalKg)} ${unit()} · ${fmt(totalAmt)} ₸ остаток`:'';
+if(!filtered.length){
+const label=salesDebtFilter==='today'?'Сегодня долгов не давали 🎉':salesDebtFilter==='week'?'За неделю долгов нет':'Активных долгов нет 🎉';
+tb.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">${label}</td></tr>`;
+return;
+}
+tb.innerHTML=filtered.map(d=>`<tr>
+<td>${dateStr(d.date)}</td>
+<td><b>${clientName(d.client_id)}</b></td>
+<td>${d.kg?fmt(d.kg)+' '+unit():'—'}</td>
+<td style="color:var(--red)">${fmt(d.amount)} ₸</td>
+<td style="color:${d.remaining===d.amount?'var(--red)':'var(--yellow)'}"><b>${fmt(d.remaining)} ₸</b></td>
+<td style="color:var(--text2);font-size:12px">${d.note||'—'}</td>
+<td style="display:flex;gap:4px">
+<button class="btn btn-success btn-sm btn-icon" onclick="openPayDebt('${d.id}')" title="Оплатить">✓</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="openDebtModal('${d.id}')" title="Редактировать">✏️</button>
+</td>
+</tr>`).join('');
+}
 function weekStart(d) {
 const dt=d?new Date(d):new Date();
 dt.setDate(dt.getDate()-dt.getDay()+1);
@@ -2835,9 +3044,21 @@ const d=debts.find(x=>x.id===editId);
 const diff=amount-(d?.amount||0);
 const newRemaining=Math.max(0,(d?.remaining||0)+diff);
 await db.from('biz_debts').update({client_id,amount,remaining:newRemaining,kg,date,note}).eq('id',editId);
+// Update linked sale if exists
+if(d?.sale_id) {
+await db.from('biz_sales').update({qty:kg,total:amount,price_per_kg:kg>0?Math.round(amount/kg):0}).eq('id',d.sale_id);
+}
 toast('Долг обновлён ✓','success');
 } else {
-const {error}=await db.from('biz_debts').insert({client_id,amount,remaining:amount,kg,date,note});
+// Create sale record so stats are correct
+const price_per_kg=kg>0?Math.round(amount/kg):0;
+let sale_id=null;
+const {data:saleData}=await db.from('biz_sales').insert({
+client_id,qty:kg,price_per_kg,total:amount,payment:'debt',
+date,note:note||'Из вкладки долги',is_fl:false
+}).select('id').single();
+sale_id=saleData?.id||null;
+const {error}=await db.from('biz_debts').insert({client_id,amount,remaining:amount,kg,date,note,sale_id});
 if(error){toast('Ошибка','error');return;}
 toast('Долг добавлен ✓','success');
 }
@@ -2897,7 +3118,25 @@ await db.from('biz_debts').delete().eq('id',id);
 await loadAll(); renderAll(); toast('Удалено','success');
 });
 }
-function openExchangeModal() { openOverlay('exch-modal'); }
+function openExchangeModal(editId='') {
+document.getElementById('exch-edit-id').value=editId;
+document.getElementById('exch-modal-title').textContent=editId?'✏️ Редактировать обмен':'🔄 Обмен товара';
+document.getElementById('exch-save-btn').textContent=editId?'💾 Сохранить':'Сохранить';
+if(editId) {
+const e=exchanges.find(x=>x.id===editId); if(!e) return;
+setTimeout(()=>{document.getElementById('exch-client').value=e.client_id||'';},50);
+document.getElementById('exch-kg-inp').value=e.kg||'';
+document.getElementById('exch-amount').value=e.amount||'';
+document.getElementById('exch-reason').value=e.reason||'';
+document.getElementById('exch-date').value=e.date||today();
+} else {
+document.getElementById('exch-kg-inp').value='';
+document.getElementById('exch-amount').value='';
+document.getElementById('exch-reason').value='';
+document.getElementById('exch-date').value=today();
+}
+openOverlay('exch-modal');
+}
 function renderExchanges() {
 const active=exchanges.filter(e=>!e.resolved);
 const all=exchanges;
@@ -2920,12 +3159,13 @@ ${active.length?active.map(e=>`
 </div>
 <div class="debt-actions">
 <button class="btn btn-success btn-sm" onclick="resolveExchange('${e.id}')">✓ Обменяли</button>
+<button class="btn btn-ghost btn-sm" onclick="openExchangeModal('${e.id}')">✏️</button>
 <button class="btn btn-ghost btn-sm" onclick="confirmDelete(()=>deleteExchange('${e.id}'))">🗑</button>
 </div>
 </div>`).join(''):'<div style="color:var(--text2);font-size:13px;padding:12px">Активных обменов нет</div>'}
 <div class="section-label" style="margin-top:20px">История всех обменов</div>
 <div class="table-card"><div class="table-wrap"><table>
-<thead><tr><th>Дата</th><th>Клиент</th><th>Кг</th><th>Сумма</th><th>Причина</th><th>Статус</th></tr></thead>
+<thead><tr><th>Дата</th><th>Клиент</th><th>Кг</th><th>Сумма</th><th>Причина</th><th>Статус</th><th></th></tr></thead>
 <tbody>${all.map(e=>`<tr>
 <td>${dateStr(e.date)}</td>
 <td>${clientName(e.client_id)}</td>
@@ -2933,23 +3173,34 @@ ${active.length?active.map(e=>`
 <td style="color:var(--red)">${e.amount?'-'+fmt(e.amount)+' ₸':'—'}</td>
 <td style="color:var(--text2)">${e.reason||'—'}</td>
 <td>${e.resolved?'<span class="badge badge-green">✓ Выполнен</span>':'<span class="badge badge-yellow">⏳ Ожидает</span>'}</td>
+<td style="display:flex;gap:4px">
+<button class="btn btn-ghost btn-sm btn-icon" onclick="openExchangeModal('${e.id}')">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="confirmDelete(()=>deleteExchange('${e.id}'))">🗑</button>
+</td>
 </tr>`).join('')}</tbody>
 </table></div></div>`;
 }
 async function saveExchange() { await withSaving(_saveExchange); }
 async function _saveExchange() {
+const editId=document.getElementById('exch-edit-id').value||'';
 const client_id=document.getElementById('exch-client').value||null;
 const kg=parseFloat(document.getElementById('exch-kg-inp').value)||0;
 const amount=parseFloat(document.getElementById('exch-amount').value)||0;
 const reason=document.getElementById('exch-reason').value||'';
 const date=document.getElementById('exch-date').value||today();
+if(editId) {
+const {error}=await db.from('biz_exchanges').update({client_id,kg,amount,reason,date}).eq('id',editId);
+if(error){toast('Ошибка','error');return;}
+toast('Обмен обновлён ✓','success');
+} else {
 const {error}=await db.from('biz_exchanges').insert({client_id,kg,amount,reason,date,resolved:false});
 if(error){toast('Ошибка','error');return;}
 await logHistory('create','biz_exchanges',`Обмен: ${clientName(client_id)} · ${kg} ${unit()}${amount?' · '+fmt(amount)+' ₸':''} · ${reason||'без причины'}`);
+toast('Обмен добавлён ✓','success');
+}
 await loadAll(); renderAll(); closeOverlay('exch-modal');
 ['exch-kg-inp','exch-amount','exch-reason'].forEach(i=>document.getElementById(i).value='');
 document.getElementById('exch-date').value=today();
-toast('Обмен добавлен ✓','success');
 }
 async function resolveExchange(id) {
 const e=exchanges.find(x=>x.id===id);
@@ -3709,11 +3960,15 @@ async function _saveQuickClient() {
 const name=document.getElementById('qc-name').value.trim();
 if(!name){toast('Укажите имя','error');return;}
 const phone=document.getElementById('qc-phone').value||'';
+const address=document.getElementById('qc-address')?.value||'';
 const type=document.getElementById('qc-type').value;
-const {data,error}=await db.from('biz_clients').insert({name,phone,type}).select().single();
+const {data,error}=await db.from('biz_clients').insert({name,phone,type,address}).select().single();
 if(error){toast('Ошибка','error');return;}
 await loadAll();
 closeOverlay('quick-client-modal');
+document.getElementById('qc-name').value='';
+document.getElementById('qc-phone').value='';
+if(document.getElementById('qc-address')) document.getElementById('qc-address').value='';
 renderQsChips();
 document.getElementById('qs-client-id').value=data.id;
 document.getElementById('qs-selected-client').textContent='✓ '+name;
@@ -4122,22 +4377,38 @@ if(ind) ind.style.display='none';
 }
 }
 function globalSearch() {
-const q = document.getElementById('global-search').value.toLowerCase().trim();
+const inp=document.getElementById('global-search');
+const clearBtn=document.getElementById('global-search-clear');
+if(clearBtn) clearBtn.style.display=inp.value?'block':'none';
+const q = inp.value.toLowerCase().trim();
 const results = document.getElementById('search-results');
 if(!q || q.length < 2) { results.classList.remove('open'); return; }
 let html = '';
-const matchClients = clients.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.phone||'')).toLowerCase().includes(q)).slice(0,4);
+const matchClients = clients.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.phone||'')+' '+(c.district||'')+' '+(c.address||'')).toLowerCase().includes(q)).slice(0,4);
 if(matchClients.length) {
 html += `<div class="search-section">👥 Клиенты</div>`;
-html += matchClients.map(c=>`<div class="search-item" onclick="closeSearchResults();showClientDetail('${c.id}')">
-<div style="display:flex;justify-content:space-between;align-items:center">
-<div>
+html += matchClients.map(c=>{
+const cDebt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+const lastSale=sales.filter(s=>s.client_id===c.id)[0];
+return `<div class="search-item" onclick="closeSearchResults();showClientDetail('${c.id}')">
+<div style="display:flex;justify-content:space-between;align-items:flex-start">
+<div style="flex:1">
 <div class="search-item-title">${c.name}${c.shop?' / '+c.shop:''}</div>
-<div class="search-item-sub">${c.phone?'📞 '+c.phone+' · ':''} ${c.address||''}</div>
+<div class="search-item-sub" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px">
+${c.phone?`<span>📞 ${c.phone}</span>`:''}
+${c.district?`<span>📍 ${c.district}</span>`:''}
+${c.address&&!c.district?`<span>📍 ${c.address}</span>`:''}
+${cDebt?`<span style="color:var(--red);font-weight:600">💳 Долг: ${fmt(cDebt)} ₸</span>`:''}
+${lastSale?`<span style="color:var(--text2)">Покупка: ${dateStr(lastSale.date)}</span>`:''}
 </div>
-${c.phone?`<a href="tel:${c.phone}" onclick="event.stopPropagation()" style="font-size:20px;text-decoration:none;padding:4px">📲</a>`:''}
 </div>
-</div>`).join('');
+<div style="display:flex;flex-direction:column;gap:4px;margin-left:8px">
+${c.phone?`<a href="tel:${c.phone}" onclick="event.stopPropagation()" style="font-size:20px;text-decoration:none">📲</a>`:''}
+${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" onclick="event.stopPropagation()" style="font-size:18px;text-decoration:none">💬</a>`:''}
+</div>
+</div>
+</div>`;
+}).join('');
 }
 const matchSales = sales.filter(s=>clientName(s.client_id).toLowerCase().includes(q)||String(s.total).includes(q)).slice(0,4);
 if(matchSales.length) {
@@ -4169,7 +4440,7 @@ results.classList.add('open');
 }
 function showSearchResults() { if(document.getElementById('global-search').value.length>=2) document.getElementById('search-results').classList.add('open'); }
 function hideSearchResults() { document.getElementById('search-results').classList.remove('open'); }
-function closeSearchResults() { document.getElementById('global-search').value=''; hideSearchResults(); }
+function closeSearchResults() { document.getElementById('global-search').value=''; hideSearchResults(); const b=document.getElementById('global-search-clear');if(b)b.style.display='none'; }
 function setReportPeriod(period) {
 const now = new Date();
 let from, to = today();
@@ -4364,7 +4635,7 @@ else({error}=await db.from('biz_inv_items').insert(data));
 if(error){toast('Ошибка','error');return;}
 await loadAll(); renderAll(); closeOverlay('inv-item-modal'); toast('Товар сохранён ✓','success');
 }
-function clearInvFilters() {
+function openInvEntryModal() {
 document.getElementById('inv-entry-date').value=today();
 updateInvEntryTitle();
 openOverlay('inv-entry-modal');
@@ -4405,11 +4676,6 @@ await loadAll(); renderAll();
 function clearInvFilters() {
 ['inv-filter-item','inv-filter-type','inv-filter-date'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
 renderInvHistory();
-}
-function openInvEntryModal() {
-document.getElementById('inv-entry-date').value=today();
-updateInvEntryTitle();
-openOverlay('inv-entry-modal');
 }
 function renderPurchases() {
 const t=today(), m=thisMonth(), y=thisYear();
@@ -4666,7 +4932,7 @@ XLSX.writeFile(wb,name+'.xlsx');
 }
 function populateSelects() {
 const opts='<option value="">— Без клиента —</option>'+clients.map(c=>`<option value="${c.id}">${c.name}${c.shop?' / '+c.shop:''}</option>`).join('');
-['dbt-client','exch-client','inv-entry-client'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+['exch-client','inv-entry-client','rem-client'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
 const supOpts='<option value="">— Без поставщика —</option>'+suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
 const supEl=document.getElementById('pur-supplier-inp'); if(supEl) supEl.innerHTML=supOpts;
 buildExpCategoryOptions('exp-cat');
@@ -4675,6 +4941,150 @@ buildExpCategoryOptions('pf-cat');
 renderQsChips();
 populateInvSelects();
 }
+// ===== НАПОМИНАНИЯ =====
+const remTypeMap={general:'📌 Общее',call:'📞 Позвонить',debt:'💳 Долг',delivery:'🚚 Доставка',payment:'💰 Оплата'};
+function openReminderModal(editId='') {
+document.getElementById('rem-edit-id').value=editId;
+document.getElementById('reminder-modal-title').textContent=editId?'✏️ Редактировать':'🔔 Новое напоминание';
+if(editId) {
+const r=reminders.find(x=>x.id===editId); if(!r) return;
+document.getElementById('rem-text').value=r.text||'';
+const dt=(r.remind_at||'').split('T');
+document.getElementById('rem-date').value=dt[0]||today();
+document.getElementById('rem-time').value=(dt[1]||'09:00').slice(0,5);
+document.getElementById('rem-client').value=r.client_id||'';
+document.getElementById('rem-type').value=r.type||'general';
+} else {
+document.getElementById('rem-text').value='';
+document.getElementById('rem-date').value=today();
+document.getElementById('rem-time').value='09:00';
+document.getElementById('rem-client').value='';
+document.getElementById('rem-type').value='general';
+}
+openOverlay('reminder-modal');
+}
+async function saveReminder() { await withSaving(_saveReminder); }
+async function _saveReminder() {
+const editId=document.getElementById('rem-edit-id').value||'';
+const text=document.getElementById('rem-text').value.trim();
+if(!text){toast('Введите текст напоминания','error');return;}
+const date=document.getElementById('rem-date').value||today();
+const time=document.getElementById('rem-time').value||'09:00';
+const remind_at=date+'T'+time+':00';
+const client_id=document.getElementById('rem-client').value||null;
+const type=document.getElementById('rem-type').value||'general';
+if(editId) {
+await db.from('biz_reminders').update({text,remind_at,client_id,type}).eq('id',editId);
+toast('Напоминание обновлено ✓','success');
+} else {
+const {error}=await db.from('biz_reminders').insert({text,remind_at,client_id,type,done:false});
+if(error){toast('Ошибка: '+error.message,'error');return;}
+toast('Напоминание добавлено ✓','success');
+// Запросить разрешение на push
+if('Notification' in window && Notification.permission==='default') {
+Notification.requestPermission();
+}
+}
+await loadAll(); renderAll(); closeOverlay('reminder-modal');
+}
+async function doneReminder(id) {
+await db.from('biz_reminders').update({done:true}).eq('id',id);
+await loadAll(); renderAll(); toast('Выполнено ✓','success');
+}
+async function deleteReminder(id) {
+confirmDelete(async()=>{
+await db.from('biz_reminders').delete().eq('id',id);
+await loadAll(); renderAll();
+});
+}
+function renderReminders() {
+const now=new Date();
+const active=reminders.filter(r=>!r.done).sort((a,b)=>a.remind_at>b.remind_at?1:-1);
+const done=reminders.filter(r=>r.done).slice(0,20);
+const overdue=active.filter(r=>new Date(r.remind_at)<now);
+const todayRems=active.filter(r=>r.remind_at?.startsWith(today()));
+setText('rem-cnt',active.length);
+setText('rem-overdue',overdue.length);
+setText('rem-today',todayRems.length);
+// Обновить badge
+const badge=document.getElementById('badge-reminders');
+if(badge){if(overdue.length+todayRems.length>0){badge.style.display='inline';badge.textContent=overdue.length+todayRems.length;}else badge.style.display='none';}
+// Просроченные блок
+const overdueBlock=document.getElementById('reminders-overdue-block');
+const overdueList=document.getElementById('reminders-overdue-list');
+if(overdueBlock&&overdueList){
+if(overdue.length){
+overdueBlock.style.display='block';
+overdueList.innerHTML=overdue.map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.2)">
+<div><div style="font-weight:600">${remTypeMap[r.type]||'📌'} ${r.text}</div>
+<div style="font-size:11px;color:var(--red)">${formatRemDt(r.remind_at)} · ${r.client_id?clientName(r.client_id):''}</div></div>
+<div style="display:flex;gap:4px">
+<button class="btn btn-success btn-sm" onclick="doneReminder('${r.id}')">✓</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteReminder('${r.id}')">🗑</button>
+</div></div>`).join('');
+} else overdueBlock.style.display='none';
+}
+// Основной список
+const list=document.getElementById('reminders-list');
+if(!list) return;
+if(!active.length&&!done.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🔔</div><p>Напоминаний нет</p><button class="btn btn-primary" onclick="openReminderModal()">+ Добавить</button></div>';return;}
+const groups={today:[],upcoming:[],done_list:done};
+active.forEach(r=>{
+const dt=new Date(r.remind_at);
+if(r.remind_at?.startsWith(today())) groups.today.push(r);
+else groups.upcoming.push(r);
+});
+let html='';
+if(groups.today.length){
+html+=`<div class="section-label">⏰ Сегодня</div>`;
+html+=groups.today.map(r=>reminderCard(r,now)).join('');
+}
+if(groups.upcoming.length){
+html+=`<div class="section-label" style="margin-top:16px">📅 Предстоящие</div>`;
+html+=groups.upcoming.map(r=>reminderCard(r,now)).join('');
+}
+if(done.length){
+html+=`<div class="section-label" style="margin-top:16px;color:var(--text2)">✅ Выполненные</div>`;
+html+=done.map(r=>`<div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:8px;opacity:0.6;display:flex;justify-content:space-between;align-items:center">
+<div><div style="text-decoration:line-through;font-size:13px">${r.text}</div><div style="font-size:11px;color:var(--text2)">${formatRemDt(r.remind_at)}</div></div>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteReminder('${r.id}')">🗑</button>
+</div>`).join('');
+}
+list.innerHTML=html;
+// Push уведомления для просроченных
+if('Notification' in window && Notification.permission==='granted') {
+overdue.forEach(r=>{
+if(!r._notified){
+new Notification('🔔 АйБи — Напоминание', {body:r.text,icon:''});
+r._notified=true;
+}
+});
+}
+}
+function reminderCard(r,now) {
+const dt=new Date(r.remind_at);
+const isOverdue=dt<now;
+const color=isOverdue?'var(--red)':r.remind_at?.startsWith(today())?'var(--yellow)':'var(--text2)';
+return `<div style="background:var(--white);border:1px solid ${isOverdue?'var(--red)':'var(--border)'};border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start">
+<div style="flex:1">
+<div style="font-weight:700;font-size:14px;margin-bottom:4px">${remTypeMap[r.type]||'📌'} ${r.text}</div>
+<div style="font-size:12px;color:${color};font-weight:600">${isOverdue?'🚨 ':' ⏰ '}${formatRemDt(r.remind_at)}</div>
+${r.client_id?`<div style="font-size:12px;color:var(--text2);margin-top:2px">👤 ${clientName(r.client_id)}</div>`:''}
+</div>
+<div style="display:flex;gap:4px;margin-left:10px">
+<button class="btn btn-success btn-sm" onclick="doneReminder('${r.id}')" title="Выполнено">✓</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="openReminderModal('${r.id}')">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteReminder('${r.id}')">🗑</button>
+</div>
+</div>`;
+}
+function formatRemDt(dt) {
+if(!dt) return '—';
+const d=new Date(dt);
+return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+}
+// Проверка напоминаний каждую минуту
+setInterval(()=>{if(reminders.length) renderReminders();},60000);
 function updateBadges() {
 const activeDebts=debts.filter(d=>d.remaining>0).length;
 const bd=document.getElementById('badge-debts');
@@ -4714,6 +5124,7 @@ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 document.getElementById('page-'+id).classList.add('active');
 event?.currentTarget?.classList.add('active');
 if(id==='analytics') setTimeout(renderAnalytics,100);
+if(id==='clients') closeClientProfile();
 if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open');
 }
 function openOverlay(id){document.getElementById(id).classList.add('open');}
