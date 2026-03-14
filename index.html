@@ -558,11 +558,17 @@ tbody tr:hover { background:var(--bg); }
     ⚠️ <span id="stock-warning-text">Товар на складе заканчивается!</span>
   </div>
 
-  <button class="quick-sale-btn" onclick="openQuickSale()">
+  <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:0">
+  <button class="quick-sale-btn" onclick="openQuickSale()" style="margin-bottom:0">
     <span class="qs-icon">⚡</span>
     Быстрая продажа
     <span style="font-size:13px;opacity:0.8;font-weight:400">нажми и внеси за 5 секунд</span>
   </button>
+  <button onclick="openQuickExpense()" style="background:var(--red-light);border:2px solid var(--red);border-radius:var(--radius);padding:16px 18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:all 0.2s;font-family:inherit" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+    <span style="font-size:26px">💸</span>
+    <span style="font-size:13px;font-weight:700;color:var(--red)">Расход</span>
+  </button>
+  </div>
 
   <div class="cards" id="dash-cards">
     <div class="card"><div class="card-icon" style="background:var(--accent-light)">💰</div><div class="card-label">Выручка сегодня</div><div class="card-value green" id="dc-today">0 ₸</div><div class="card-sub" id="dc-today-count"></div></div>
@@ -675,9 +681,7 @@ tbody tr:hover { background:var(--bg); }
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
     <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
   </div>
-  </div>
 
-  
   <div class="cards" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px" id="s-pay-summary"></div>
 
   <!-- Кнопки периода -->
@@ -1810,7 +1814,13 @@ tbody tr:hover { background:var(--bg); }
       <button class="modal-close" onclick="closeOverlay('exp-modal')">✕</button>
     </div>
     <div class="form-group"><label class="form-label">Категория</label>
-      <select class="form-select" id="exp-cat"></select>
+      <div style="position:relative">
+        <input type="text" class="form-input" id="exp-cat-search" placeholder="🔍 Поиск категории..." oninput="filterExpCats()" autocomplete="off">
+        <button onclick="clearExpCat()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px;display:none" id="exp-cat-clear">✕</button>
+        <div id="exp-cat-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;background:var(--white);border:1px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin-top:2px"></div>
+      </div>
+      <input type="hidden" id="exp-cat">
+      <div id="exp-cat-name" style="font-size:12px;color:var(--accent);font-weight:600;margin-top:4px"></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Сумма (₸)</label><input type="number" class="form-input" id="exp-amount" placeholder="0"></div>
@@ -3431,6 +3441,18 @@ await loadAll(); renderAll();
 });
 }
 function openExpenseModal() { openOverlay('exp-modal'); }
+function openQuickExpense() {
+document.getElementById('exp-amount').value='';
+document.getElementById('exp-desc').value='';
+document.getElementById('exp-employee').value='';
+document.getElementById('exp-date').value=today();
+document.getElementById('exp-modal').dataset.editId='';
+const btn=document.querySelector('#exp-modal .btn-danger');
+if(btn) btn.textContent='Добавить';
+clearExpCat();
+openOverlay('exp-modal');
+setTimeout(()=>document.getElementById('exp-cat-search')?.focus(),200);
+}
 let expStatPeriod = 'month';
 function setExpStatPeriod(p) {
 expStatPeriod = p;
@@ -3616,14 +3638,19 @@ document.getElementById('exp-amount').value=e.amount||'';
 document.getElementById('exp-date').value=e.date||today();
 document.getElementById('exp-desc').value=e.description||'';
 document.getElementById('exp-employee').value=e.employee||'';
-// Store edit id for save
 document.getElementById('exp-modal').dataset.editId=id;
-// Update button text
 const btn=document.querySelector('#exp-modal .btn-danger');
 if(btn) btn.textContent='💾 Сохранить изменения';
 openOverlay('exp-modal');
-// Set category after modal opens
-setTimeout(()=>{ const sel=document.getElementById('exp-cat'); if(sel) sel.value=e.category||''; },50);
+// Set category in search field
+setTimeout(()=>{
+const cat=e.category||'';
+document.getElementById('exp-cat').value=cat;
+document.getElementById('exp-cat-search').value=cat;
+document.getElementById('exp-cat-name').textContent=cat?'✓ '+cat:'';
+const clearBtn=document.getElementById('exp-cat-clear');
+if(clearBtn) clearBtn.style.display=cat?'block':'none';
+},50);
 }
 async function saveExpense() { await withSaving(_saveExpense); }
 async function _saveExpense() {
@@ -3632,6 +3659,7 @@ const amount=parseFloat(document.getElementById('exp-amount').value)||0;
 const date=document.getElementById('exp-date').value||today();
 const description=document.getElementById('exp-desc').value||'';
 const employee=document.getElementById('exp-employee').value||'';
+if(!cat){toast('Выберите категорию','error');return;}
 if(!amount){toast('Укажите сумму','error');return;}
 const editId=document.getElementById('exp-modal').dataset.editId||'';
 let error;
@@ -3643,10 +3671,10 @@ if(!error) await logHistory('update','biz_expenses',`Изменён расход
 if(!error) await logHistory('create','biz_expenses',`Расход: ${cat} · ${fmt(amount)} ₸${description?' · '+description:''}${employee?' · '+employee:''}`);
 }
 if(error){toast('Ошибка','error');return;}
-// Reset edit mode
 document.getElementById('exp-modal').dataset.editId='';
 const btn=document.querySelector('#exp-modal .btn-danger');
 if(btn) btn.textContent='Добавить';
+clearExpCat();
 await loadAll(); renderAll(); closeOverlay('exp-modal');
 document.getElementById('exp-amount').value=''; document.getElementById('exp-desc').value='';
 document.getElementById('exp-employee').value=''; document.getElementById('exp-date').value=today();
@@ -5057,6 +5085,45 @@ else({error}=await db.from('biz_suppliers').insert(data));
 if(error){toast('Ошибка','error');return;}
 await loadAll(); renderAll(); closeOverlay('supplier-modal'); toast('Поставщик сохранён ✓','success');
 }
+// ===== ПОИСК КАТЕГОРИИ РАСХОДА =====
+function filterExpCats() {
+const q=(document.getElementById('exp-cat-search')?.value||'').toLowerCase().trim();
+const drop=document.getElementById('exp-cat-drop');
+const clearBtn=document.getElementById('exp-cat-clear');
+if(clearBtn) clearBtn.style.display=q?'block':'none';
+const cats=expCategories.map(c=>c.name).filter(Boolean).sort();
+const matches=q?cats.filter(c=>c.toLowerCase().includes(q)):cats;
+if(!matches.length){drop.style.display='none';return;}
+drop.innerHTML=matches.map(cat=>`<div onclick="selectExpCat('${cat.replace(/'/g,"\\'")}') " style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+${cat}</div>`).join('');
+drop.style.display='block';
+}
+function selectExpCat(cat) {
+document.getElementById('exp-cat').value=cat;
+document.getElementById('exp-cat-search').value=cat;
+document.getElementById('exp-cat-name').textContent='✓ '+cat;
+document.getElementById('exp-cat-drop').style.display='none';
+const clearBtn=document.getElementById('exp-cat-clear');
+if(clearBtn) clearBtn.style.display='block';
+}
+function clearExpCat() {
+document.getElementById('exp-cat').value='';
+document.getElementById('exp-cat-search').value='';
+document.getElementById('exp-cat-name').textContent='';
+document.getElementById('exp-cat-drop').style.display='none';
+const clearBtn=document.getElementById('exp-cat-clear');
+if(clearBtn) clearBtn.style.display='none';
+}
+// Показать все категории при фокусе
+document.addEventListener('focusin',e=>{
+if(e.target.id==='exp-cat-search') filterExpCats();
+});
+document.addEventListener('click',e=>{
+if(!e.target.closest('#exp-modal')) {
+const drop=document.getElementById('exp-cat-drop');
+if(drop) drop.style.display='none';
+}
+});
 function buildExpCategoryOptions(selectId) {
 const el=document.getElementById(selectId); if(!el) return;
 const all=expCategories.map(c=>c.name).sort();
