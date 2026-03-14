@@ -160,7 +160,7 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
 table { width:100%; border-collapse:collapse; font-size:13px; }
 thead tr { background:var(--bg); }
 th { padding:11px 16px; text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text2); white-space:nowrap; border-bottom:1px solid var(--border); }
-td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:middle; }
+td { padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:middle; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
 tr:last-child td { border-bottom:none; }
 tbody tr:hover { background:var(--bg); }
 .empty-state { text-align:center; padding:48px 20px; color:var(--text2); }
@@ -168,7 +168,7 @@ tbody tr:hover { background:var(--bg); }
 .empty-state p { font-size:13px; }
 
 /* ── BADGES ── */
-.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:600; white-space:nowrap; }
+.badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:100px; font-size:11px; font-weight:600; white-space:nowrap; max-width:180px; overflow:hidden; text-overflow:ellipsis; }
 .badge-green { background:var(--green-light); color:var(--green); }
 .badge-red { background:var(--red-light); color:var(--red); }
 .badge-yellow { background:var(--yellow-light); color:var(--yellow); }
@@ -253,9 +253,9 @@ tbody tr:hover { background:var(--bg); }
 .client-row-top { display:flex; align-items:center; gap:14px; }
 .client-row-actions { display:flex; flex-wrap:wrap; gap:4px; }
 .client-avatar { width:40px; height:40px; border-radius:10px; background:var(--accent-light); color:var(--accent); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.client-info { flex:1; min-width:0; }
-.client-name { font-weight:600; font-size:14px; }
-.client-meta { font-size:12px; color:var(--text2); margin-top:2px; }
+.client-info { flex:1; min-width:0; overflow:hidden; }
+.client-name { font-weight:600; font-size:14px; overflow:hidden; }
+.client-meta { font-size:12px; color:var(--text2); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .client-stats { display:flex; gap:16px; }
 .client-stat { text-align:center; }
 .client-stat-val { font-weight:700; font-size:14px; }
@@ -674,7 +674,7 @@ tbody tr:hover { background:var(--bg); }
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
     <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
-    <div class="card"><div class="card-label">Конусов активно</div><div class="card-sub" id="s-konus-cnt"></div></div>
+  </div>
   </div>
 
   
@@ -2780,7 +2780,6 @@ ${cDebt?`<div class="client-stat"><div class="client-stat-val" style="color:var(
 </div>
 </div>
 <div class="client-row-actions">
-<button class="btn btn-ghost btn-sm" onclick="showClientDetail('${c.id}')">👁 Профиль</button>
 ${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">📲 Звонок</a>`:''}
 ${c.phone?`<a href="https://wa.me/${c.phone.replace(/\D/g,'')}" target="_blank" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none;color:#25D366" onclick="event.stopPropagation()">💬 WA</a>`:''}
 ${c.address?`<a href="https://2gis.kz/almaty/search/${encodeURIComponent(c.address)}/route?to=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm" style="text-align:center;text-decoration:none" onclick="event.stopPropagation()">🗺️ 2GIS</a>`:''}
@@ -3525,9 +3524,9 @@ el.innerHTML = `<div style="background:var(--card);border:1px solid var(--border
 ${sorted.map(([cat,sum])=>{
 const pct = Math.round(sum/total*100);
 return `<div style="margin-bottom:10px">
-<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
-<span><span class="badge badge-red">${cat}</span></span>
-<span><b>${fmt(sum)} ₸</b> <span style="color:var(--text2);font-size:11px">${pct}%</span></span>
+<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:3px;gap:8px">
+<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0"><span class="badge badge-red" style="max-width:100%;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle">${cat}</span></span>
+<span style="flex-shrink:0;white-space:nowrap"><b>${fmt(sum)} ₸</b> <span style="color:var(--text2);font-size:11px">${pct}%</span></span>
 </div>
 <div style="background:var(--bg);border-radius:100px;height:6px;overflow:hidden">
 <div style="background:var(--red);height:100%;width:${pct}%;border-radius:100px;transition:width 0.3s"></div>
@@ -5624,15 +5623,29 @@ function setClientPhoto(clientId,data){const p=getClientPhotos();if(data)p[clien
 function getClientPhoto(clientId){return getClientPhotos()[clientId]||null;}
 function handleClientPhoto(input){
 const file=input.files[0]; if(!file) return;
-if(file.size>2*1024*1024){toast('Фото слишком большое (макс 2MB)','error');return;}
 const reader=new FileReader();
 reader.onload=e=>{
-const data=e.target.result;
+const img=new Image();
+img.onload=()=>{
+// Сжимаем до максимум 600x600px
+const MAX=600;
+let w=img.width, h=img.height;
+if(w>MAX||h>MAX){
+if(w>h){h=Math.round(h*MAX/w);w=MAX;}
+else{w=Math.round(w*MAX/h);h=MAX;}
+}
+const canvas=document.createElement('canvas');
+canvas.width=w; canvas.height=h;
+const ctx=canvas.getContext('2d');
+ctx.drawImage(img,0,0,w,h);
+const data=canvas.toDataURL('image/jpeg',0.82);
 document.getElementById('cl-photo-img').src=data;
 document.getElementById('cl-photo-img').style.display='block';
 document.getElementById('cl-photo-icon').style.display='none';
 document.getElementById('cl-photo-remove').style.display='inline-flex';
 document.getElementById('cl-photo-input').dataset.photoData=data;
+};
+img.src=e.target.result;
 };
 reader.readAsDataURL(file);
 }
@@ -5714,23 +5727,20 @@ toast('Тег обновлён ✓','success');
 }
 function clientTagMenu(clientId, currentTag) {
 const options=Object.entries(CLIENT_TAGS).map(([k,v])=>
-`<div onclick="setClientTag('${clientId}','${k}')" style="padding:8px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-radius:8px;background:${currentTag===k?v.bg:'transparent'}" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='${currentTag===k?v.bg:'transparent'}'">
-<span style="color:${v.color}">${v.label}</span></div>`).join('');
-const none=`<div onclick="setClientTag('${clientId}','')" style="padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2);border-radius:8px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">✕ Без тега</div>`;
-// Simple inline popup
-const existing=document.getElementById('tag-popup');
-if(existing) existing.remove();
-const popup=document.createElement('div');
-popup.id='tag-popup';
-popup.style.cssText='position:fixed;z-index:9999;background:var(--white);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 4px 20px rgba(0,0,0,0.15);min-width:160px';
-popup.innerHTML=none+options;
-document.body.appendChild(popup);
-// Position near cursor
-const rect=event.target.getBoundingClientRect();
-popup.style.top=(rect.bottom+4)+'px';
-popup.style.left=rect.left+'px';
-// Close on outside click
-setTimeout(()=>document.addEventListener('click',()=>popup.remove(),{once:true}),10);
+`<div onclick="setClientTag('${clientId}','${k}');closeOverlay('tag-overlay')" style="padding:12px 16px;cursor:pointer;font-size:14px;display:flex;align-items:center;gap:10px;border-radius:10px;background:${currentTag===k?v.bg:'transparent'};border:1px solid ${currentTag===k?v.color:'transparent'};margin-bottom:4px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='${currentTag===k?v.bg:'transparent'}'">
+<span style="color:${v.color};font-weight:600">${v.label}</span></div>`).join('');
+const none=`<div onclick="setClientTag('${clientId}','');closeOverlay('tag-overlay')" style="padding:12px 16px;cursor:pointer;font-size:14px;color:var(--text2);border-radius:10px;border:1px solid transparent;margin-bottom:4px" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">✕ Без тега</div>`;
+let overlay=document.getElementById('tag-overlay');
+if(!overlay){
+overlay=document.createElement('div');
+overlay.id='tag-overlay';
+overlay.className='overlay';
+overlay.innerHTML='<div class="modal modal-sm"><div class="modal-header"><div class="modal-title">🏷️ Выбрать тег</div><button class="modal-close" onclick="closeOverlay(\'tag-overlay\')">✕</button></div><div id="tag-overlay-content"></div></div>';
+document.body.appendChild(overlay);
+overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('open');});
+}
+document.getElementById('tag-overlay-content').innerHTML=none+options;
+openOverlay('tag-overlay');
 }
 function updateBadges() {
 const activeDebts=debts.filter(d=>d.remaining>0).length;
