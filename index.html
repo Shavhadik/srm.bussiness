@@ -1508,7 +1508,7 @@ tbody tr:hover { background:#fafbff; }
     <span>⚫ Нет адреса</span>
     <span id="map-no-addr-count" style="color:var(--text2)"></span>
   </div>
-  <div id="ymap" style="width:100%;height:520px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:var(--bg)">
+  <div id="ymap" style="width:100%;height:500px;border-radius:14px;border:1px solid var(--border);overflow:hidden;background:var(--bg);position:relative;box-sizing:border-box;">
     <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);font-size:14px">
       Загрузка карты...
     </div>
@@ -5016,9 +5016,28 @@ if(d&&d[0]){const res=[parseFloat(d[0].lat),parseFloat(d[0].lon)];geocodeCache[a
 } catch(e){}
 return null;
 }
+function addMarkerToMap(c,coords){
+const hasDebt=debts.some(d=>d.client_id===c.id&&d.remaining>0);
+const debtAmt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+const color=hasDebt?'#ef4444':'#22c55e';
+const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const icon=L.divIcon({className:'',html:`<div style="width:36px;height:36px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px">${initials}</div>`,iconSize:[36,36],iconAnchor:[18,18]});
+const marker=L.marker(coords,{icon}).addTo(leafletMap);
+marker.bindPopup(`<div style="min-width:180px">
+<div style="font-weight:700;font-size:14px;margin-bottom:6px">${c.name}${c.shop?' / '+c.shop:''}</div>
+${c.phone?`<div>📞 <a href="tel:${c.phone}">${c.phone}</a></div>`:''}
+${c.district?`<div>🏘️ ${c.district}</div>`:''}
+<div>📍 ${c.address}</div>
+${hasDebt?`<div style="color:#ef4444;font-weight:600;margin-top:6px">💳 Долг: ${fmt(debtAmt)} ₸</div>`:`<div style="color:#22c55e;margin-top:6px">✅ Долгов нет</div>`}
+<div style="margin-top:8px;display:flex;gap:8px">
+<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.address)}&rtt=auto" target="_blank" style="color:#4f6ef7;font-size:12px">🗺️ Маршрут</a>
+<span style="color:#4f6ef7;font-size:12px;cursor:pointer" onclick="goPage('clients');setTimeout(()=>showClientDetail('${c.id}'),80)">👤 Профиль</span>
+</div></div>`);
+leafletMarkers.push(marker);
+return marker;
+}
 async function renderMap() {
 if(!document.getElementById('page-map')?.classList.contains('active')) return;
-// Populate district filter
 const distSel=document.getElementById('map-filter-district');
 if(distSel){
 const districts=[...new Set(clients.map(c=>c.district).filter(Boolean))].sort();
@@ -5037,7 +5056,6 @@ return true;
 });
 const withAddr=filtered.filter(c=>c.address);
 const noAddr=filtered.filter(c=>!c.address);
-// Без адреса
 const noAddrBlock=document.getElementById('map-clients-no-addr');
 const noAddrList=document.getElementById('map-no-addr-list');
 const noAddrCount=document.getElementById('map-no-addr-count');
@@ -5048,54 +5066,53 @@ if(noAddrList) noAddrList.innerHTML=noAddr.map(c=>`<div style="background:var(--
 const mapEl=document.getElementById('ymap');
 if(!leafletMap){
 mapEl.innerHTML='';
-leafletMap=L.map('ymap').setView([43.238949,76.889709],12);
+leafletMap=L.map('ymap',{zoomControl:true}).setView([43.238949,76.889709],12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(leafletMap);
 } else {
 leafletMarkers.forEach(m=>leafletMap.removeLayer(m));
 leafletMarkers=[];
 }
+// Важно: пересчитать размер после показа страницы
+setTimeout(()=>leafletMap.invalidateSize(),150);
 if(!withAddr.length) return;
-// Показываем статус загрузки
-const statusEl=document.createElement('div');
+// Статус
+let statusEl=document.getElementById('map-status');
+if(!statusEl){
+statusEl=document.createElement('div');
 statusEl.id='map-status';
-statusEl.style.cssText='position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(0,0,0,0.7);color:#fff;padding:6px 14px;border-radius:20px;font-size:12px';
-statusEl.textContent=`⏳ Загружаю точки... 0/${withAddr.length}`;
-mapEl.style.position='relative';
+statusEl.style.cssText='position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:1000;background:rgba(0,0,0,0.75);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;pointer-events:none;white-space:nowrap';
 mapEl.appendChild(statusEl);
-// Геокодируем клиентов поочерёдно
+}
+statusEl.style.display='block';
+// Сначала сразу показываем кешированные точки
+const cached=withAddr.filter(c=>geocodeCache[c.address]);
+const notCached=withAddr.filter(c=>!geocodeCache[c.address]);
 const bounds=[];
-for(let i=0;i<withAddr.length;i++){
-const c=withAddr[i];
-statusEl.textContent=`⏳ Загружаю... ${i+1}/${withAddr.length}`;
-const hasDebt=debts.some(d=>d.client_id===c.id&&d.remaining>0);
-const debtAmt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
-const coords=await geocodeAddress(c.address);
-if(!coords) continue;
+cached.forEach(c=>{
+const coords=geocodeCache[c.address];
+addMarkerToMap(c,coords);
 bounds.push(coords);
-const color=hasDebt?'#ef4444':'#22c55e';
-const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-const icon=L.divIcon({className:'',html:`<div style="width:36px;height:36px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px">${initials}</div>`,iconSize:[36,36],iconAnchor:[18,18]});
-const marker=L.marker(coords,{icon}).addTo(leafletMap);
-marker.bindPopup(`<div style="min-width:180px">
-<div style="font-weight:700;font-size:14px;margin-bottom:6px">${c.name}${c.shop?' / '+c.shop:''}</div>
-${c.phone?`<div>📞 <a href="tel:${c.phone}">${c.phone}</a></div>`:''}
-${c.district?`<div>🏘️ ${c.district}</div>`:''}
-<div>📍 ${c.address}</div>
-${hasDebt?`<div style="color:#ef4444;font-weight:600;margin-top:6px">💳 Долг: ${fmt(debtAmt)} ₸</div>`:`<div style="color:#22c55e;margin-top:6px">✅ Долгов нет</div>`}
-<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-<a href="https://yandex.ru/maps/?rtext=~${encodeURIComponent(c.address)}&rtt=auto" target="_blank" style="color:#4f6ef7;font-size:12px">🗺️ Маршрут</a>
-<span style="color:#4f6ef7;font-size:12px;cursor:pointer" onclick="goPage('clients');setTimeout(()=>showClientDetail('${c.id}'),80)">👤 Профиль</span>
-</div>
-</div>`);
-leafletMarkers.push(marker);
-// Пауза чтобы не превысить лимит Nominatim (1 req/sec)
-await new Promise(r=>setTimeout(r,1100));
+});
+if(bounds.length>0) leafletMap.fitBounds(bounds,{padding:[40,40]});
+if(!notCached.length){statusEl.style.display='none';return;}
+// Загружаем некешированные батчами по 3
+let done=cached.length;
+statusEl.textContent=`⏳ ${done}/${withAddr.length}`;
+const BATCH=3, DELAY=1200;
+for(let i=0;i<notCached.length;i+=BATCH){
+const batch=notCached.slice(i,i+BATCH);
+const results=await Promise.all(batch.map(c=>geocodeAddress(c.address)));
+results.forEach((coords,j)=>{
+done++;
+statusEl.textContent=`⏳ ${done}/${withAddr.length}`;
+if(!coords) return;
+bounds.push(coords);
+addMarkerToMap(batch[j],coords);
+});
+if(bounds.length>0) leafletMap.fitBounds(bounds,{padding:[40,40]});
+if(i+BATCH<notCached.length) await new Promise(r=>setTimeout(r,DELAY));
 }
-statusEl.remove();
-if(bounds.length>0){
-if(bounds.length===1) leafletMap.setView(bounds[0],15);
-else leafletMap.fitBounds(bounds,{padding:[40,40]});
-}
+statusEl.style.display='none';
 }
 // ===== НАПОМИНАНИЯ =====
 const remTypeMap={general:'📌 Общее',call:'📞 Позвонить',debt:'💳 Долг',delivery:'🚚 Доставка',payment:'💰 Оплата'};
