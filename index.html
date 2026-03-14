@@ -600,6 +600,30 @@ tbody tr:hover { background:var(--bg); }
     </div>
   </div>
 
+  <!-- Сравнение месяцев -->
+  <div class="chart-card" style="margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="chart-title" style="margin-bottom:0">📊 Сравнение месяцев</div>
+      <div style="display:flex;gap:6px">
+        <button id="mc-btn-rev" class="btn btn-primary btn-sm" onclick="setMonthCompare('rev')">Выручка</button>
+        <button id="mc-btn-kg" class="btn btn-ghost btn-sm" onclick="setMonthCompare('kg')">Кг</button>
+      </div>
+    </div>
+    <canvas id="month-compare-chart" style="max-height:180px"></canvas>
+  </div>
+
+  <!-- Лучшие/худшие дни недели -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" class="chart-row">
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">📅 По дням недели</div>
+      <canvas id="weekday-chart" style="max-height:160px"></canvas>
+    </div>
+    <div class="chart-card" style="margin-bottom:0">
+      <div class="chart-title">👤 Средняя покупка</div>
+      <div id="dash-avg-client" style="max-height:160px;overflow-y:auto"></div>
+    </div>
+  </div>
+
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px" class="chart-row">
     <div class="card"><div class="card-icon" style="background:var(--accent-light);font-size:20px">💵</div><div class="card-label">Наличные сегодня</div><div class="card-value" id="dc-cash">0 ₸</div></div>
     <div class="card"><div class="card-icon" style="background:var(--red-light);font-size:20px">🔴</div><div class="card-label">Каспи сегодня</div><div class="card-value" id="dc-kaspi">0 ₸</div></div>
@@ -2315,7 +2339,7 @@ return `<tr>
 </tr>`;
 }).join('');
 // Графики и топ клиентов
-setTimeout(()=>{renderDashCharts();renderDashTopClients();},50);
+setTimeout(()=>{renderDashCharts();renderDashTopClients();renderMonthCompare();renderWeekdayChart();renderAvgClientPurchase();},50);
 }
 function renderSalesPage() {
 const t=today(), m=thisMonth();
@@ -5493,6 +5517,31 @@ return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric
 }
 // Проверка напоминаний каждую минуту
 setInterval(()=>{if(reminders.length) renderReminders();},60000);
+
+// ===== ЕЖЕДНЕВНЫЙ ИТОГ =====
+function checkDailySummary() {
+if(!('Notification' in window)) return;
+if(Notification.permission!=='granted') return;
+const now=new Date();
+const h=now.getHours(), mins=now.getMinutes();
+// Показываем итог в 20:00 один раз в день
+if(h!==20||mins>2) return;
+const lastShown=localStorage.getItem('biz_daily_summary_date');
+const todayStr=today();
+if(lastShown===todayStr) return;
+localStorage.setItem('biz_daily_summary_date',todayStr);
+const t=todayStr;
+const todaySales=sales.filter(s=>s.date===t&&s.payment!=='debt'&&s.payment!=='konus');
+const todayRev=todaySales.reduce((a,s)=>a+s.total,0);
+const todayKg=todaySales.reduce((a,s)=>a+s.qty,0);
+const activeDebtTotal=debts.filter(d=>d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+const debtReturned=debtPay.filter(p=>p.date===t).reduce((a,p)=>a+p.amount,0);
+let body=`Продаж: ${todaySales.length} · ${fmt(todayKg)} ${unit()} · ${fmt(todayRev)} ₸`;
+if(debtReturned) body+=`\nВозврат долгов: +${fmt(debtReturned)} ₸`;
+if(activeDebtTotal) body+=`\nАктивных долгов: ${fmt(activeDebtTotal)} ₸`;
+new Notification('📊 Итог дня — АйБи', {body, icon:''});
+}
+setInterval(checkDailySummary, 60000);
 // ===== ГРАФИКИ ДАШБОРДА =====
 let dashChartMode='rev';
 let dashChartInst=null;
@@ -5542,6 +5591,96 @@ document.getElementById('dash-pay-empty')?.remove();
 ctx2.style.display='block';
 dashPayChartInst=new Chart(ctx2,{type:'doughnut',data:{labels:['💵 Нал','🔴 Каспи','📱 Pay','📋 Долг'],datasets:[{data:[cash,kaspi,kp,debtToday],backgroundColor:['#22c55e','#ef4444','#8b5cf6','#f59e0b'],borderWidth:0,hoverOffset:6}]},options:{plugins:{legend:{position:'bottom',labels:{color:textColor,font:{size:11},padding:10}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.raw)} ₸`}}},cutout:'65%',responsive:true,maintainAspectRatio:true}});
 }
+
+// ===== СРАВНЕНИЕ МЕСЯЦЕВ =====
+let monthCompareMode='rev';
+let monthCompareChart=null;
+function setMonthCompare(mode) {
+monthCompareMode=mode;
+document.getElementById('mc-btn-rev').className=mode==='rev'?'btn btn-primary btn-sm':'btn btn-ghost btn-sm';
+document.getElementById('mc-btn-kg').className=mode==='kg'?'btn btn-primary btn-sm':'btn btn-ghost btn-sm';
+renderMonthCompare();
+}
+function renderMonthCompare() {
+const ctx=document.getElementById('month-compare-chart'); if(!ctx) return;
+const paidSales=sales.filter(s=>s.payment!=='debt'&&s.payment!=='konus');
+// Берём последние 6 месяцев
+const months=[];
+for(let i=5;i>=0;i--){
+const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i);
+months.push(d.toISOString().slice(0,7));
+}
+const labels=months.map(m=>{const d=new Date(m+'-01');return d.toLocaleDateString('ru-RU',{month:'short',year:'2-digit'});});
+const data=months.map(m=>monthCompareMode==='rev'
+? paidSales.filter(s=>s.date?.startsWith(m)).reduce((a,s)=>a+s.total,0)
+: paidSales.filter(s=>s.date?.startsWith(m)).reduce((a,s)=>a+s.qty,0)
+);
+const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+const textColor=isDark?'#6b7490':'#9ca3af';
+const maxVal=Math.max(...data,1);
+const colors=data.map((v,i)=>i===data.length-1?'rgba(79,110,247,0.9)':v===maxVal?'rgba(52,211,153,0.8)':'rgba(79,110,247,0.45)');
+if(monthCompareChart) monthCompareChart.destroy();
+monthCompareChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:6,borderSkipped:false}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>monthCompareMode==='rev'?fmt(c.raw)+' ₸':fmt(c.raw)+' '+unit()}}},scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11}}},y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v>=1000000?(v/1000000).toFixed(1)+'М':v>=1000?(v/1000).toFixed(0)+'К':v}}},responsive:true,maintainAspectRatio:true}});
+}
+
+// ===== ЛУЧШИЙ/ХУДШИЙ ДЕНЬ НЕДЕЛИ =====
+let weekdayChart=null;
+function renderWeekdayChart() {
+const ctx=document.getElementById('weekday-chart'); if(!ctx) return;
+const dayNames=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+const dayTotals=[0,0,0,0,0,0,0];
+const dayCounts=[0,0,0,0,0,0,0];
+const paidSales=sales.filter(s=>s.payment!=='debt'&&s.payment!=='konus');
+paidSales.forEach(s=>{
+if(!s.date) return;
+const d=new Date(s.date);
+const di=d.getDay()===0?6:d.getDay()-1;
+dayTotals[di]+=s.total;
+dayCounts[di]++;
+});
+const avgs=dayTotals.map((t,i)=>dayCounts[i]>0?Math.round(t/dayCounts[i]):0);
+const maxIdx=avgs.indexOf(Math.max(...avgs));
+const minIdx=avgs.indexOf(Math.min(...avgs.filter(v=>v>0)));
+const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+const gridColor=isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)';
+const textColor=isDark?'#6b7490':'#9ca3af';
+const colors=avgs.map((_,i)=>i===maxIdx?'rgba(52,211,153,0.85)':i===minIdx&&avgs[i]>0?'rgba(239,68,68,0.7)':'rgba(79,110,247,0.5)');
+if(weekdayChart) weekdayChart.destroy();
+weekdayChart=new Chart(ctx,{type:'bar',data:{labels:dayNames,datasets:[{data:avgs,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'~'+fmt(c.raw)+' ₸'}}},scales:{x:{grid:{color:gridColor},ticks:{color:textColor,font:{size:11}}},y:{grid:{color:gridColor},ticks:{color:textColor,callback:v=>v>=1000?(v/1000).toFixed(0)+'К':v}}},responsive:true,maintainAspectRatio:true}});
+}
+
+// ===== СРЕДНЯЯ ПОКУПКА ПО КЛИЕНТУ =====
+function renderAvgClientPurchase() {
+const el=document.getElementById('dash-avg-client'); if(!el) return;
+const paidSales=sales.filter(s=>s.payment!=='debt'&&s.payment!=='konus'&&s.client_id);
+const byClient={};
+paidSales.forEach(s=>{
+if(!byClient[s.client_id]) byClient[s.client_id]={total:0,count:0,kg:0};
+byClient[s.client_id].total+=s.total;
+byClient[s.client_id].count++;
+byClient[s.client_id].kg+=s.qty;
+});
+const list=Object.entries(byClient)
+.map(([cid,d])=>({cid,avg:Math.round(d.total/d.count),avgKg:+(d.kg/d.count).toFixed(1),count:d.count}))
+.filter(x=>x.count>=2)
+.sort((a,b)=>b.avg-a.avg)
+.slice(0,8);
+if(!list.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2);font-size:13px">Недостаточно данных</div>';return;}
+el.innerHTML=list.map((x,i)=>{
+const c=clients.find(cl=>cl.id===x.cid);
+const name=c?c.name:'—';
+const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${medal} ${name}</div>
+<div style="flex-shrink:0;text-align:right;margin-left:8px">
+<div style="font-weight:700;color:var(--accent)">${fmt(x.avg)} ₸</div>
+<div style="color:var(--text2);font-size:10px">${x.avgKg} ${unit()} · ${x.count} раз</div>
+</div>
+</div>`;
+}).join('');
+}
+
 // Топ клиентов на дашборде
 function renderDashTopClients() {
 const el=document.getElementById('dash-top-clients');
