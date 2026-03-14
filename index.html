@@ -1695,8 +1695,8 @@ tbody tr:hover { background:#fafbff; }
       <div style="position:relative">
         <input type="text" class="form-input" id="dbt-client-search" placeholder="🔍 Поиск клиента..." oninput="dbtSearchClients()" autocomplete="off">
         <button onclick="document.getElementById('dbt-client-search').value='';document.getElementById('dbt-client').value='';document.getElementById('dbt-client-name').textContent='';document.getElementById('dbt-client-drop').style.display='none'" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px">✕</button>
+        <div id="dbt-client-drop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:999;background:var(--white);border:1px solid var(--border);border-radius:10px;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,0.12);margin-top:2px"></div>
       </div>
-      <div id="dbt-client-drop" style="display:none;position:absolute;z-index:999;background:var(--white);border:1px solid var(--border);border-radius:10px;max-height:180px;overflow-y:auto;width:calc(100% - 48px);box-shadow:0 4px 20px rgba(0,0,0,0.12)"></div>
       <div id="dbt-client-name" style="font-size:12px;color:var(--accent);font-weight:600;margin-top:4px"></div>
     </div>
     <div class="form-row">
