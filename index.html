@@ -626,8 +626,7 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
     <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
-    </div>
-    <div class="card-sub" id="s-konus-cnt"></div></div>
+    <div class="card"><div class="card-label">Конусов активно</div><div class="card-sub" id="s-konus-cnt"></div></div>
   </div>
 
   
@@ -1493,8 +1492,6 @@ tbody tr:hover { background:#fafbff; }
       <tbody id="history-tb"></tbody>
     </table></div>
   </div>
-</div>
-
 </div>
 
 <div class="page" id="page-reminders">
@@ -4350,13 +4347,11 @@ el.innerHTML=`
 <div class="card"><div class="card-label">🔴 Каспи</div><div class="card-value red">${fmt(kaspi)} ₸</div></div>
 <div class="card"><div class="card-label">📱 Каспи Pay</div><div class="card-value" style="color:var(--purple)">${fmt(kp)} ₸</div></div>
 <div class="card"><div class="card-label">📋 Продажи в долг</div><div class="card-value yellow">${fmt(debtSales)} ₸</div></div>
-</div>
 <div class="card"><div class="card-label">✅ Погашено долгов</div><div class="card-value green">${fmt(debtPaidTotal)} ₸</div></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
 <div class="card" style="border-color:var(--red)"><div class="card-label">⏳ Активных долгов</div><div class="card-value red">${fmt(activeDebtTotal)} ₸</div><div class="card-sub">${debts.filter(d=>d.remaining>0).length} клиентов</div></div>
-<div class="card-sub">${konusSales.filter(k=>k.remaining>0).length} клиентов</div></div>
-</div>
+<div class="card"><div class="card-label">🔄 Конусов активно</div><div class="card-value yellow">${fmt(konusSales.filter(k=>k.remaining>0).reduce((a,k)=>a+k.remaining,0))} ₸</div><div class="card-sub">${konusSales.filter(k=>k.remaining>0).length} клиентов</div></div>
 <div class="card"><div class="card-label">👥 Клиентов всего</div><div class="card-value">${clients.length}</div></div>
 <div class="card"><div class="card-label">🏭 Поставщиков</div><div class="card-value">${suppliers.length}</div></div>
 <div class="card"><div class="card-label">📊 Всего продаж</div><div class="card-value">${sales.length}</div></div>
