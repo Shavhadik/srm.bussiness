@@ -594,11 +594,10 @@ tbody tr:hover { background:#fafbff; }
     </div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px" class="chart-row">
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px" class="chart-row">
     <div class="card"><div class="card-icon" style="background:#e0f2fe;font-size:20px">💵</div><div class="card-label">Наличные сегодня</div><div class="card-value" id="dc-cash">0 ₸</div></div>
     <div class="card"><div class="card-icon" style="background:#fee2e2;font-size:20px">🔴</div><div class="card-label">Каспи сегодня</div><div class="card-value" id="dc-kaspi">0 ₸</div></div>
     <div class="card"><div class="card-icon" style="background:#ede9fe;font-size:20px">📱</div><div class="card-label">Каспи Pay / QR</div><div class="card-value" id="dc-kaspipay">0 ₸</div></div>
-    <div class="card"><div class="card-icon" style="background:#fef3c7;font-size:20px">🔺</div><div class="card-label">Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="dc-konus-today">0 ₸</div></div>
   </div>
 
   <div class="section-label">Последние продажи сегодня</div>
@@ -627,8 +626,8 @@ tbody tr:hover { background:#fafbff; }
     <div class="card"><div class="card-label">Кг сегодня</div><div class="card-value yellow" id="s-kg">0</div></div>
     <div class="card"><div class="card-label">В долг сегодня</div><div class="card-value red" id="s-debt-today">0 ₸</div></div>
     <div class="card"><div class="card-label">💰 Возврат долгов</div><div class="card-value" style="color:var(--green)" id="s-debt-return">0 ₸</div><div class="card-sub" id="s-debt-return-sub"></div></div>
-    <div class="card" style="display:none"><div class="card-label">🔺 Конус сегодня</div><div class="card-value" style="color:var(--yellow)" id="s-konus-today">0 ₸</div></div>
-    <div class="card" style="display:none"><div class="card-label">🔺 Конусов активных</div><div class="card-value" style="color:var(--yellow)" id="s-konus-active">0 ₸</div><div class="card-sub" id="s-konus-cnt"></div></div>
+    </div>
+    <div class="card-sub" id="s-konus-cnt"></div></div>
   </div>
 
   
@@ -652,8 +651,7 @@ tbody tr:hover { background:#fafbff; }
       <option value="kaspi">🔴 Каспи</option>
       <option value="kaspipay">📱 Каспи Pay</option>
       <option value="debt">📋 В долг</option>
-      <option value="konus">🔺 Конус</option>
-    </select>
+          </select>
     <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-date').value='';document.getElementById('sf-search').value='';document.getElementById('sf-pay').value='';renderSalesTable()">Сбросить</button>
   </div>
 
@@ -752,8 +750,7 @@ tbody tr:hover { background:#fafbff; }
       <option value="retail">Розница</option>
       <option value="wholesale">Оптовик</option>
       <option value="shop">Магазин</option>
-      <option value="conusniy">Конусный</option>
-    </select>
+          </select>
     <select class="filter-input" id="cl-district-filter" onchange="renderClients()">
       <option value="">Все районы</option>
     </select>
@@ -1167,8 +1164,7 @@ tbody tr:hover { background:#fafbff; }
         <option value="retail">Розница</option>
         <option value="wholesale">Оптовик</option>
         <option value="shop">Магазин</option>
-        <option value="conusniy">Конусный</option>
-      </select>
+              </select>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeOverlay('quick-client-modal')">Отмена</button>
@@ -1485,7 +1481,6 @@ tbody tr:hover { background:#fafbff; }
       <option value="biz_clients">Клиенты</option>
       <option value="biz_expenses">Расходы</option>
       <option value="biz_debts">Долги</option>
-      <option value="biz_konus">Конусы</option>
       <option value="biz_purchases">Закупки</option>
       <option value="biz_productions">Производство</option>
     </select>
@@ -1601,7 +1596,6 @@ tbody tr:hover { background:#fafbff; }
         <div class="pay-opt selected" data-m="cash" onclick="selectQsPay(this,'cash')"><span class="pay-icon">💵</span>Наличные</div>
         <div class="pay-opt" data-m="kaspi" onclick="selectQsPay(this,'kaspi')"><span class="pay-icon">🔴</span>Каспи</div>
         <div class="pay-opt" data-m="kaspipay" onclick="selectQsPay(this,'kaspipay')"><span class="pay-icon">📱</span>Каспи Pay</div>
-        <div class="pay-opt" data-m="konus" onclick="selectQsPay(this,'konus')"><span class="pay-icon">🔺</span>Конус</div>
         <div class="pay-opt" data-m="debt" onclick="selectQsPay(this,'debt')"><span class="pay-icon">📋</span>В долг</div>
         <div class="pay-opt" data-m="mixed" onclick="selectQsPay(this,'mixed')"><span class="pay-icon">🔀</span>Смешанная</div>
       </div>
@@ -1664,8 +1658,7 @@ tbody tr:hover { background:#fafbff; }
           <option value="retail">Розница</option>
           <option value="wholesale">Оптовик</option>
           <option value="shop">Магазин</option>
-          <option value="conusniy">Конусный</option>
-        </select>
+                  </select>
       </div>
     </div>
     <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="cl-address" placeholder="Улица, дом"></div>
@@ -2130,7 +2123,7 @@ const totalCashToday=todayTotal+debtReturnedToday+konusReturnedToday;
 setText('dc-today', fmt(totalCashToday)+' ₸');
 let sub=todaySales.length+' продаж';
 if(debtReturnedToday) sub+=` · +${fmt(debtReturnedToday)} ₸ долг`;
-if(konusReturnedToday) sub+=` · +${fmt(konusReturnedToday)} ₸ конус`;
+
 setText('dc-today-count', sub);
 setText('dc-month', fmt(monthTotal)+' ₸');
 setText('dc-month-name', new Date().toLocaleDateString('ru-RU',{month:'long'}));
@@ -2153,7 +2146,7 @@ const debtKP=debtPay.filter(p=>p.date===t&&p.payment==='kaspipay').reduce((a,p)=
 setText('dc-cash', fmt(cash+debtCash)+' ₸');
 setText('dc-kaspi', fmt(kaspi+debtKaspi)+' ₸');
 setText('dc-kaspipay', fmt(kp+debtKP)+' ₸');
-setText('dc-konus-today', fmt(konusToday)+' ₸');
+
 const activeKonus=konusSales.filter(k=>k.remaining>0);
 const totalKonus=activeKonus.reduce((a,k)=>a+k.remaining,0);
 setText('dc-konus', fmt(totalKonus)+' ₸');
@@ -2257,7 +2250,7 @@ if(el) el.innerHTML=`
 <div class="card"><div class="card-label">🔴 Каспи</div><div class="card-value red">${fmt(kaspi)} ₸</div></div>
 <div class="card"><div class="card-label">📱 Каспи Pay</div><div class="card-value" style="color:var(--purple)">${fmt(kp)} ₸</div></div>
 <div class="card"><div class="card-label">📋 В долг</div><div class="card-value yellow">${fmt(debtToday)} ₸</div></div>
-<div class="card"><div class="card-label">🔺 Конус</div><div class="card-value" style="color:var(--yellow)">${fmt(konusToday)} ₸</div></div>
+
 `;
 // Render debt returns block
 const retBlock=document.getElementById('debt-returns-block');
@@ -2304,7 +2297,7 @@ const totalKg=filtered.reduce((a,s)=>a+s.qty,0);
 const totalDebt=filtered.filter(s=>s.payment==='debt').reduce((a,s)=>a+s.total,0);
 const totalKonus=filtered.filter(s=>s.payment==='konus').reduce((a,s)=>a+s.total,0);
 const summEl=document.getElementById('sf-summary-text');
-if(summEl) summEl.innerHTML=`${filtered.length} продаж · ${fmt(totalKg)} кг · Выручка: <b>${fmt(totalRev)} ₸</b>${totalDebt?` · В долг: <span style="color:var(--red)">${fmt(totalDebt)} ₸</span>`:''}${totalKonus?` · Конус: <span style="color:var(--yellow)">${fmt(totalKonus)} ₸</span>`:''}`;
+if(summEl) summEl.innerHTML=`${filtered.length} продаж · ${fmt(totalKg)} кг · Выручка: <b>${fmt(totalRev)} ₸</b>${totalDebt?` · В долг: <span style="color:var(--red)">${fmt(totalDebt)} ₸</span>`:''}`;
 const tb=document.getElementById('sales-tb');
 if(!filtered.length){tb.innerHTML='<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">💰</div><p>Нет продаж</p></div></td></tr>';return;}
 const showAll = document.getElementById('sf-show-all')?.checked;
@@ -2470,7 +2463,7 @@ document.getElementById('qs-client-search').disabled=false;
 document.getElementById('qs-chips').style.opacity='1';
 document.getElementById('qs-mixed-fields').style.display='none';
 qsPayMethod='cash';
-document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-konus','selected-mixed'));
+document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-mixed'));
 document.querySelector('.pay-opt[data-m="cash"]').classList.add('selected');
 renderQsChips();
 if(settings.price) document.getElementById('qs-price').value=settings.price;
@@ -2497,8 +2490,8 @@ costField.style.background='';
 }
 function selectQsPay(el,method) {
 qsPayMethod=method;
-document.querySelectorAll('.pay-opt').forEach(x=>x.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-konus','selected-mixed'));
-const map={cash:'selected',kaspi:'selected-kaspi',kaspipay:'selected-kaspipay',debt:'selected-debt',konus:'selected-konus',mixed:'selected-mixed'};
+document.querySelectorAll('.pay-opt').forEach(x=>x.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-mixed'));
+const map={cash:'selected',kaspi:'selected-kaspi',kaspipay:'selected-kaspipay',debt:'selected-debt',mixed:'selected-mixed'};
 el.classList.add(map[method]||'selected');
 document.getElementById('qs-mixed-fields').style.display=method==='mixed'?'block':'none';
 }
@@ -2544,7 +2537,7 @@ const clientKonus=konusSales.filter(k=>k.client_id===id&&k.remaining>0).reduce((
 const warnEl=document.getElementById('qs-debt-warning');
 let warns=[];
 if(clientDebt>0) warns.push(`💸 Долг: ${fmt(clientDebt)} ₸`);
-if(clientKonus>0) warns.push(`🔺 Конус: ${fmt(clientKonus)} ₸`);
+
 if(warns.length){warnEl.innerHTML='⚠️ Внимание! '+warns.join(' · ');warnEl.style.display='block';}
 else warnEl.style.display='none';
 }
@@ -2636,7 +2629,7 @@ const thisWkKg=cSales.filter(s=>weekStart(s.date)===thisWeek).reduce((a,s)=>a+s.
 const lastWkKg=cSales.filter(s=>weekStart(s.date)===lastWeek).reduce((a,s)=>a+s.qty,0);
 const weekDiff=thisWkKg-lastWkKg;
 const weekAlert=lastWkKg>0&&weekDiff<0;
-const typeMap={retail:'Розница',wholesale:'Оптовик',shop:'Магазин',conusniy:'Конусный'};
+const typeMap={retail:'Розница',wholesale:'Оптовик',shop:'Магазин'};
 const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 return `<div class="client-row">
 <div class="client-row-top">
@@ -4357,13 +4350,13 @@ el.innerHTML=`
 <div class="card"><div class="card-label">🔴 Каспи</div><div class="card-value red">${fmt(kaspi)} ₸</div></div>
 <div class="card"><div class="card-label">📱 Каспи Pay</div><div class="card-value" style="color:var(--purple)">${fmt(kp)} ₸</div></div>
 <div class="card"><div class="card-label">📋 Продажи в долг</div><div class="card-value yellow">${fmt(debtSales)} ₸</div></div>
-<div class="card"><div class="card-label">🔺 Продажи конус</div><div class="card-value yellow">${fmt(konusSalesTotal)} ₸</div></div>
+</div>
 <div class="card"><div class="card-label">✅ Погашено долгов</div><div class="card-value green">${fmt(debtPaidTotal)} ₸</div></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px">
 <div class="card" style="border-color:var(--red)"><div class="card-label">⏳ Активных долгов</div><div class="card-value red">${fmt(activeDebtTotal)} ₸</div><div class="card-sub">${debts.filter(d=>d.remaining>0).length} клиентов</div></div>
-<div class="card" style="border-color:var(--yellow)"><div class="card-label">🔺 Активных конусов</div><div class="card-value yellow">${fmt(activeKonusTotal)} ₸</div><div class="card-sub">${konusSales.filter(k=>k.remaining>0).length} клиентов</div></div>
-<div class="card"><div class="card-label">✅ Погашено конусов</div><div class="card-value green">${fmt(konusPaidTotal)} ₸</div></div>
+<div class="card-sub">${konusSales.filter(k=>k.remaining>0).length} клиентов</div></div>
+</div>
 <div class="card"><div class="card-label">👥 Клиентов всего</div><div class="card-value">${clients.length}</div></div>
 <div class="card"><div class="card-label">🏭 Поставщиков</div><div class="card-value">${suppliers.length}</div></div>
 <div class="card"><div class="card-label">📊 Всего продаж</div><div class="card-value">${sales.length}</div></div>
@@ -5046,12 +5039,23 @@ populateInvSelects();
 let leafletMap=null;
 let leafletMarkers=[];
 const geocodeCache={};
+// Границы Казахстана
+const KZ_BOUNDS=[[40.5,50.0],[55.5,87.5]];
+const KZ_CENTER=[43.238949,76.889709];
 async function geocodeAddress(addr) {
 if(geocodeCache[addr]) return geocodeCache[addr];
 try {
-const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent('Алматы, '+addr)}&format=json&limit=1`,{headers:{'Accept-Language':'ru'}});
+// countrycodes=kz — только Казахстан, viewbox — приоритет Алматы
+const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1&countrycodes=kz&viewbox=76.5,42.7,77.5,43.5&bounded=0`;
+const r=await fetch(url,{headers:{'Accept-Language':'ru'}});
 const d=await r.json();
-if(d&&d[0]){const res=[parseFloat(d[0].lat),parseFloat(d[0].lon)];geocodeCache[addr]=res;return res;}
+if(d&&d[0]){
+const lat=parseFloat(d[0].lat), lon=parseFloat(d[0].lon);
+// Проверяем что точка внутри Казахстана
+if(lat>=40.5&&lat<=55.5&&lon>=50.0&&lon<=87.5){
+const res=[lat,lon]; geocodeCache[addr]=res; return res;
+}
+}
 } catch(e){}
 return null;
 }
@@ -5105,7 +5109,12 @@ if(noAddrList) noAddrList.innerHTML=noAddr.map(c=>`<div style="background:var(--
 const mapEl=document.getElementById('ymap');
 if(!leafletMap){
 mapEl.innerHTML='';
-leafletMap=L.map('ymap',{zoomControl:true}).setView([43.238949,76.889709],12);
+leafletMap=L.map('ymap',{
+zoomControl:true,
+maxBounds:KZ_BOUNDS,
+maxBoundsViscosity:1.0,
+minZoom:5
+}).setView(KZ_CENTER,12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(leafletMap);
 } else {
 leafletMarkers.forEach(m=>leafletMap.removeLayer(m));
@@ -5304,9 +5313,6 @@ if(activeDebts>0){bd.style.display='inline';bd.textContent=activeDebts;}else{bd.
 const todayCnt=sales.filter(s=>s.date===today()).length;
 const bs=document.getElementById('badge-sales');
 if(todayCnt>0){bs.style.display='inline';bs.textContent=todayCnt;}else{bs.style.display='none';}
-const activeKonus=konusSales.filter(k=>k.remaining>0).length;
-const bk=document.getElementById('badge-konus');
-if(bk){if(activeKonus>0){bk.style.display='inline';bk.textContent=activeKonus;}else{bk.style.display='none';}}
 }
 function clientName(id) {
 if(!id) return '<span style="color:var(--text2)">—</span>';
@@ -5323,7 +5329,7 @@ return `<div style="display:inline-flex;flex-direction:column;gap:2px">
 <span class="badge ${badgeClass}" style="font-size:10px">${methodMap[debtReturnMethod]||debtReturnMethod}</span>
 </div>`;
 }
-const map={cash:'<span class="badge badge-green">💵 Нал</span>',kaspi:'<span class="badge badge-red">🔴 Каспи</span>',kaspipay:'<span class="badge badge-purple">📱 QR</span>',debt:'<span class="badge badge-yellow">📋 Долг</span>',konus:'<span class="badge badge-yellow">🔺 Конус</span>',mixed:'<span class="badge" style="background:var(--purple-light);color:var(--purple)">🔀 Смеш.</span>'};
+const map={cash:'<span class="badge badge-green">💵 Нал</span>',kaspi:'<span class="badge badge-red">🔴 Каспи</span>',kaspipay:'<span class="badge badge-purple">📱 QR</span>',debt:'<span class="badge badge-yellow">📋 Долг</span>',mixed:'<span class="badge" style="background:var(--purple-light);color:var(--purple)">🔀 Смеш.</span>'};
 return map[p]||p;
 }
 function dateStr(d) {if(!d)return'—';const p=d.split('-');return`${p[2]}.${p[1]}.${p[0]}`;}
