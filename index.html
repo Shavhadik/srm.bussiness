@@ -719,7 +719,8 @@ tbody tr:hover { background:var(--bg); }
 
   <div class="filters">
     <input type="date" class="filter-input" id="sf-date" onchange="renderSalesTable()">
-    <input type="text" class="filter-input" placeholder="🔍 Поиск клиента" id="sf-search" oninput="renderSalesTable()" style="width:200px">
+    <input type="text" class="filter-input" placeholder="🔍 Поиск клиента" id="sf-search" oninput="renderSalesTable()" style="width:180px">
+    <input type="number" class="filter-input" placeholder="💰 Сумма" id="sf-amount" oninput="renderSalesTable()" style="width:110px">
     <select class="filter-input" id="sf-pay" onchange="renderSalesTable()">
       <option value="">Все оплаты</option>
       <option value="cash">💵 Наличные</option>
@@ -727,7 +728,7 @@ tbody tr:hover { background:var(--bg); }
       <option value="kaspipay">📱 Каспи Pay</option>
       <option value="debt">📋 В долг</option>
           </select>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-date').value='';document.getElementById('sf-search').value='';document.getElementById('sf-pay').value='';renderSalesTable()">Сбросить</button>
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sf-date').value='';document.getElementById('sf-search').value='';document.getElementById('sf-pay').value='';document.getElementById('sf-amount').value='';renderSalesTable()">Сбросить</button>
   </div>
 
   <div class="table-card">
@@ -1837,6 +1838,11 @@ tbody tr:hover { background:var(--bg); }
       <div class="modal-title">💸 Расход</div>
       <button class="modal-close" onclick="closeOverlay('exp-modal')">✕</button>
     </div>
+    <!-- Шаблоны -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px;text-transform:uppercase">⚡ Быстрые шаблоны</div>
+      <div id="exp-templates" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
     <div class="form-group"><label class="form-label">Категория</label>
       <div style="position:relative">
         <input type="text" class="form-input" id="exp-cat-search" placeholder="🔍 Поиск категории..." oninput="filterExpCats()" autocomplete="off">
@@ -1857,6 +1863,9 @@ tbody tr:hover { background:var(--bg); }
       </select>
     </div>
     <div class="form-group"><label class="form-label">Описание</label><input type="text" class="form-input" id="exp-desc" placeholder="Что за расход?"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <button class="btn btn-ghost btn-sm" onclick="saveExpTemplate()" style="font-size:11px">💾 Сохранить как шаблон</button>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeOverlay('exp-modal')">Отмена</button>
       <button class="btn btn-danger" onclick="saveExpense()">Добавить</button>
@@ -2334,6 +2343,7 @@ return `<tr>
 <td>${payBadge(s.payment)}</td>
 <td style="display:flex;gap:4px">
 <button class="btn btn-ghost btn-sm btn-icon" onclick="editSale('${sid}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="duplicateSale('${sid}')" title="Повторить">📋</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale('${sid}')" title="Удалить">🗑</button>
 </td>
 </tr>`;
@@ -2415,15 +2425,15 @@ function renderSalesTable() {
 const fd=document.getElementById('sf-date')?.value;
 const fsearch=document.getElementById('sf-search')?.value?.toLowerCase()||'';
 const fpay=document.getElementById('sf-pay')?.value||'';
+const famount=parseFloat(document.getElementById('sf-amount')?.value)||0;
 let filtered=sales;
-// Apply period filter
 if(salesPeriod==='today') filtered=filtered.filter(s=>s.date===today());
 else if(salesPeriod==='week') filtered=filtered.filter(s=>s.date>=weekStart());
 else if(salesPeriod==='month') filtered=filtered.filter(s=>s.date?.startsWith(thisMonth()));
-// Then apply manual filters on top
 if(fd) filtered=filtered.filter(s=>s.date===fd);
 if(fpay) filtered=filtered.filter(s=>s.payment===fpay);
 if(fsearch) filtered=filtered.filter(s=>clientName(s.client_id).toLowerCase().includes(fsearch)||(s.note||'').toLowerCase().includes(fsearch));
+if(famount) filtered=filtered.filter(s=>Math.abs(s.total-famount)<famount*0.05||s.total===famount);
 const totalRev=filtered.filter(s=>s.payment!=='debt'&&s.payment!=='konus').reduce((a,s)=>a+s.total,0);
 const totalKg=filtered.reduce((a,s)=>a+s.qty,0);
 const totalDebt=filtered.filter(s=>s.payment==='debt').reduce((a,s)=>a+s.total,0);
@@ -2468,6 +2478,7 @@ ${s.note?`<div style="font-size:11px;color:var(--text2)">${s.note}</div>`:''}
 <td style="font-weight:600;color:${profit!==null?(profit>=0?'var(--green)':'var(--red)'):'var(--text2)'}">${profit!==null?fmt(profit)+' ₸':'—'}</td>
 <td style="display:flex;gap:4px">
 <button class="btn btn-ghost btn-sm btn-icon" onclick="editSale('${sid}')" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="duplicateSale('${sid}')" title="Повторить продажу">📋</button>
 <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteSale('${sid}')" title="Удалить">🗑</button>
 </td>
 </tr>`;
@@ -2574,6 +2585,35 @@ await logHistory('delete','biz_sales',`Удалена продажа: ${cName} �
 await db.from('biz_sales').delete().eq('id',id);
 await loadAll(); renderAll(); toast('Удалено','success');
 });
+}
+function duplicateSale(id) {
+const s=sales.find(x=>x.id===id); if(!s) return;
+resetQsForm();
+document.getElementById('qs-qty').value=s.qty;
+document.getElementById('qs-price').value=s.price_per_kg;
+document.getElementById('qs-discount').value=s.discount||0;
+document.getElementById('qs-cost').value=s.cost_per_kg||'';
+document.getElementById('qs-date').value=today();
+document.getElementById('qs-note').value=s.note||'';
+document.getElementById('qs-edit-id').value='';
+document.getElementById('qs-save-btn').textContent='💾 Сохранить продажу';
+if(s.client_id&&!s.is_fl){
+document.getElementById('qs-client-id').value=s.client_id;
+const c=clients.find(x=>x.id===s.client_id);
+if(c){
+document.getElementById('qs-client-search').value=c.name+(c.shop?' / '+c.shop:'');
+const sel=document.getElementById('qs-selected-client');
+if(sel) sel.textContent='✓ '+c.name;
+}
+}
+qsPayMethod=s.payment||'cash';
+document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-konus','selected-mixed'));
+const map={cash:'selected',kaspi:'selected-kaspi',kaspipay:'selected-kaspipay',debt:'selected-debt',konus:'selected-konus',mixed:'selected-mixed'};
+const payEl=document.querySelector(`.pay-opt[data-m="${s.payment}"]`);
+if(payEl) payEl.classList.add(map[s.payment]||'selected');
+calcQsTotal();
+openOverlay('qs-modal');
+toast('📋 Продажа скопирована — проверь и сохрани','success');
 }
 function calcQsTotal() {
 const qty=parseFloat(document.getElementById('qs-qty').value)||0;
@@ -3464,7 +3504,7 @@ await db.from('biz_exchanges').delete().eq('id',id);
 await loadAll(); renderAll();
 });
 }
-function openExpenseModal() { openOverlay('exp-modal'); }
+function openExpenseModal() { renderExpTemplates(); openOverlay('exp-modal'); }
 function openQuickExpense() {
 document.getElementById('exp-amount').value='';
 document.getElementById('exp-desc').value='';
@@ -3474,6 +3514,7 @@ document.getElementById('exp-modal').dataset.editId='';
 const btn=document.querySelector('#exp-modal .btn-danger');
 if(btn) btn.textContent='Добавить';
 clearExpCat();
+renderExpTemplates();
 openOverlay('exp-modal');
 setTimeout(()=>document.getElementById('exp-cat-search')?.focus(),200);
 }
@@ -5109,6 +5150,50 @@ else({error}=await db.from('biz_suppliers').insert(data));
 if(error){toast('Ошибка','error');return;}
 await loadAll(); renderAll(); closeOverlay('supplier-modal'); toast('Поставщик сохранён ✓','success');
 }
+// ===== ШАБЛОНЫ РАСХОДОВ =====
+function getExpTemplates(){try{return JSON.parse(localStorage.getItem('biz_exp_templates')||'[]');}catch(e){return[];}}
+function saveExpTemplates(t){localStorage.setItem('biz_exp_templates',JSON.stringify(t));}
+function renderExpTemplates(){
+const el=document.getElementById('exp-templates'); if(!el) return;
+const templates=getExpTemplates();
+if(!templates.length){
+el.innerHTML='<span style="font-size:11px;color:var(--text2)">Нет шаблонов — заполни форму и нажми "Сохранить как шаблон"</span>';
+return;
+}
+el.innerHTML=templates.map((t,i)=>`
+<div style="display:inline-flex;align-items:center;gap:4px;background:var(--red-light);border:1px solid var(--red);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:11px;color:var(--red)" onclick="applyExpTemplate(${i})">
+<span>${t.category}${t.amount?' · '+fmt(t.amount)+' ₸':''}</span>
+<span onclick="event.stopPropagation();deleteExpTemplate(${i})" style="margin-left:2px;opacity:0.6;font-size:13px">✕</span>
+</div>`).join('');
+}
+function applyExpTemplate(i){
+const t=getExpTemplates()[i]; if(!t) return;
+selectExpCat(t.category);
+if(t.amount) document.getElementById('exp-amount').value=t.amount;
+if(t.employee) document.getElementById('exp-employee').value=t.employee;
+if(t.description) document.getElementById('exp-desc').value=t.description;
+}
+function saveExpTemplate(){
+const cat=document.getElementById('exp-cat').value;
+if(!cat){toast('Сначала выберите категорию','error');return;}
+const amount=document.getElementById('exp-amount').value;
+const employee=document.getElementById('exp-employee').value;
+const description=document.getElementById('exp-desc').value;
+const templates=getExpTemplates();
+// Проверяем дубль
+if(templates.find(t=>t.category===cat&&t.amount==amount)){toast('Такой шаблон уже есть','warning');return;}
+templates.push({category:cat,amount:amount?parseFloat(amount):null,employee,description});
+saveExpTemplates(templates);
+renderExpTemplates();
+toast('Шаблон сохранён ✓','success');
+}
+function deleteExpTemplate(i){
+const templates=getExpTemplates();
+templates.splice(i,1);
+saveExpTemplates(templates);
+renderExpTemplates();
+}
+
 // ===== ПОИСК КАТЕГОРИИ РАСХОДА =====
 function filterExpCats() {
 const q=(document.getElementById('exp-cat-search')?.value||'').toLowerCase().trim();
