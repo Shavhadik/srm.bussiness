@@ -59,8 +59,9 @@
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior:smooth; }
-body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; min-height:100vh; }
+html { scroll-behavior:smooth; overflow-x:hidden; }
+body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; min-height:100vh; overflow-x:hidden; }
+* { box-sizing:border-box; max-width:100%; }
 
 /* ── SIDEBAR ── */
 .sidebar {
@@ -115,12 +116,12 @@ body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; 
 .card {
   background:var(--white); border-radius:var(--radius); padding:18px;
   box-shadow:var(--shadow); border:1px solid var(--border);
-  position:relative; overflow:hidden;
+  position:relative; overflow:hidden; min-width:0;
 }
 .card-icon { width:40px; height:40px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:12px; }
-.card-label { font-size:12px; color:var(--text2); font-weight:500; margin-bottom:4px; }
-.card-value { font-size:22px; font-weight:700; color:var(--text); line-height:1.2; }
-.card-sub { font-size:11px; color:var(--text2); margin-top:4px; }
+.card-label { font-size:12px; color:var(--text2); font-weight:500; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.card-value { font-size:22px; font-weight:700; color:var(--text); line-height:1.2; word-break:break-word; overflow-wrap:break-word; }
+.card-sub { font-size:11px; color:var(--text2); margin-top:4px; overflow:hidden; text-overflow:ellipsis; }
 .card-trend { position:absolute; top:16px; right:16px; font-size:11px; font-weight:600; padding:2px 8px; border-radius:100px; }
 .trend-up { background:var(--green-light); color:var(--green); }
 .trend-down { background:var(--red-light); color:var(--red); }
@@ -377,11 +378,19 @@ tbody tr:hover { background:var(--bg); }
   .topbar { left:0; }
   .hamburger { display:flex; }
   .form-row,.form-row-3 { grid-template-columns:1fr; }
-  .cards { grid-template-columns:repeat(2,1fr); }
+  .cards { grid-template-columns:repeat(2,1fr) !important; }
   .pay-selector { grid-template-columns:repeat(2,1fr); }
   .chart-row { grid-template-columns:1fr !important; }
   .quick-sale-btn { padding:16px; font-size:16px; }
   .search-results { width:calc(100vw - 40px); }
+
+  /* Фиксируем все inline grid на мобиле */
+  [style*="grid-template-columns:repeat(3"] { grid-template-columns:repeat(2,1fr) !important; }
+  [style*="grid-template-columns:repeat(4"] { grid-template-columns:repeat(2,1fr) !important; }
+  [style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns:1fr !important; }
+
+  /* Таблицы не растягиваются */
+  .table-card { overflow-x:auto; }
 
   /* Карточка клиента на мобиле */
   .client-row {
@@ -419,6 +428,10 @@ tbody tr:hover { background:var(--bg); }
     padding:6px 8px;
     text-align:center;
   }
+  /* Уменьшаем шрифт карточек на мобиле */
+  .card-value { font-size:17px !important; }
+  .card { padding:12px; }
+  .card-icon { width:32px; height:32px; font-size:16px; margin-bottom:8px; }
 }
 </style>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -532,6 +545,10 @@ tbody tr:hover { background:var(--bg); }
     </div>
     <div class="nav-item" onclick="goPage('map')">
       <div class="nav-icon">🗺️</div> Карта клиентов
+    </div>
+    <div class="nav-item" onclick="goPage('route')">
+      <div class="nav-icon">📍</div> Маршрут дня
+      <span class="nav-badge" id="badge-route" style="display:none">0</span>
     </div>
     <div class="nav-item" onclick="goPage('settings')">
       <div class="nav-icon">⚙️</div> Настройки
@@ -1630,6 +1647,43 @@ tbody tr:hover { background:var(--bg); }
   </div>
 </div>
 
+<div class="page" id="page-route">
+  <div class="page-header">
+    <div class="page-header-left"><h1>📍 Маршрут дня</h1><p>Выбери клиентов и расставь по порядку</p></div>
+    <div class="page-header-actions">
+      <button class="btn btn-ghost btn-sm" onclick="clearDayRoute()">🗑 Очистить</button>
+      <button class="btn btn-primary" id="route-go-btn" onclick="openDayRoute()" style="display:none">🚗 Открыть маршрут</button>
+    </div>
+  </div>
+
+  <!-- Поиск клиента для добавления -->
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text2)">➕ Добавить клиента в маршрут</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap" id="route-quick-add">
+      <input type="text" class="filter-input" id="route-search" placeholder="🔍 Поиск клиента..." oninput="renderRouteSearch()" style="flex:1;min-width:200px">
+    </div>
+    <div id="route-search-results" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px"></div>
+  </div>
+
+  <!-- Список маршрута -->
+  <div id="route-empty" style="text-align:center;padding:40px;color:var(--text2);display:none">
+    <div style="font-size:40px;margin-bottom:12px">📍</div>
+    <div>Маршрут пустой — найди клиентов выше и добавь их</div>
+  </div>
+  <div id="route-list"></div>
+
+  <!-- Итого -->
+  <div id="route-summary" style="display:none;background:var(--accent-light);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-top:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-weight:700;color:var(--accent)" id="route-count-label">0 клиентов</div>
+        <div style="font-size:12px;color:var(--text2)" id="route-debt-label"></div>
+      </div>
+      <button class="btn btn-primary" onclick="openDayRoute()">🚗 Открыть маршрут</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="qs-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -2370,7 +2424,8 @@ const ws_sales=sales.filter(s=>s.date>=wS&&s.payment!=='debt'&&s.payment!=='konu
 setText('s-today', fmt(ts.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-week', fmt(ws_sales.reduce((a,s)=>a+s.total,0))+' ₸');
 setText('s-month', fmt(ms.reduce((a,s)=>a+s.total,0))+' ₸');
-const debtKgToday=debts.filter(d=>d.date===t).reduce((a,d)=>a+d.kg,0);
+// Кг в долг — только реально внесённые СЕГОДНЯ (по created_at, не по дате долга)
+const debtKgToday=debts.filter(d=>d.created_at?.startsWith(t)).reduce((a,d)=>a+d.kg,0);
 setText('s-cnt', sales.filter(s=>s.date===t).length);
 setText('s-kg', fmt(sales.filter(s=>s.date===t).reduce((a,s)=>a+s.qty,0) + debtKgToday) + (debtKgToday?` <span style="font-size:11px;color:var(--yellow)">(+${fmt(debtKgToday)} в долг)</span>`:''));
 setText('s-debt-today', fmt(debtToday)+' ₸');
@@ -2859,17 +2914,18 @@ function showClientDetail(id) {
 _clientListScrollY=window.scrollY||document.documentElement.scrollTop||0;
 const c=clients.find(x=>x.id===id); if(!c) return;
 const cSales=sales.filter(s=>s.client_id===id);
+const cPaidSales=cSales.filter(s=>s.payment!=='debt'); // только реальные продажи без долговых
 const cDebts=debts.filter(d=>d.client_id===id);
 const cDebtPay=debtPay.filter(p=>p.client_id===id);
 const cExch=exchanges.filter(e=>e.client_id===id);
-const totalRev=cSales.filter(s=>s.payment!=='debt').reduce((a,s)=>a+s.total,0);
+const totalRev=cPaidSales.reduce((a,s)=>a+s.total,0);
 const totalDebtPaid=cDebtPay.reduce((a,p)=>a+p.amount,0);
-const totalKg=cSales.reduce((a,s)=>a+s.qty,0);
+const totalKg=cPaidSales.reduce((a,s)=>a+s.qty,0); // кг только из реальных продаж
 const activeDebt=cDebts.filter(d=>d.remaining>0).reduce((a,d)=>a+d.remaining,0);
 const weekStartFn=(d)=>{const dt=new Date(d);dt.setDate(dt.getDate()-dt.getDay()+1);return dt.toISOString().split('T')[0];};
 const weeks=[];
 for(let i=7;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i*7);weeks.push(weekStartFn(d.toISOString().split('T')[0]));}
-const weeklyKg=weeks.map(w=>cSales.filter(s=>weekStartFn(s.date)===w).reduce((a,s)=>a+s.qty,0));
+const weeklyKg=weeks.map(w=>cPaidSales.filter(s=>weekStartFn(s.date)===w).reduce((a,s)=>a+s.qty,0));
 const avgWeekKg=weeklyKg.filter(x=>x>0).length?weeklyKg.filter(x=>x>0).reduce((a,b)=>a+b,0)/weeklyKg.filter(x=>x>0).length:0;
 const thisWkKg=weeklyKg[weeklyKg.length-1];
 const lastWkKg=weeklyKg[weeklyKg.length-2];
@@ -3331,23 +3387,25 @@ if(editId) {
 const d=debts.find(x=>x.id===editId);
 const diff=amount-(d?.amount||0);
 const newRemaining=Math.max(0,(d?.remaining||0)+diff);
-await db.from('biz_debts').update({client_id,amount,remaining:newRemaining,kg,date,note}).eq('id',editId);
-// Update linked sale if exists
+const {error}=await db.from('biz_debts').update({client_id,amount,remaining:newRemaining,kg,date,note}).eq('id',editId);
+if(error){toast('Ошибка: '+error.message,'error');return;}
 if(d?.sale_id) {
 await db.from('biz_sales').update({qty:kg,total:amount,price_per_kg:kg>0?Math.round(amount/kg):0}).eq('id',d.sale_id);
 }
 toast('Долг обновлён ✓','success');
 } else {
-// Create sale record so stats are correct
-const price_per_kg=kg>0?Math.round(amount/kg):0;
+// Пробуем создать запись в продажах для статистики
 let sale_id=null;
-const {data:saleData}=await db.from('biz_sales').insert({
+try {
+const price_per_kg=kg>0?Math.round(amount/kg):0;
+const {data:saleData,error:saleErr}=await db.from('biz_sales').insert({
 client_id,qty:kg,price_per_kg,total:amount,payment:'debt',
 date,note:note||'Из вкладки долги',is_fl:false
 }).select('id').single();
-sale_id=saleData?.id||null;
+if(!saleErr) sale_id=saleData?.id||null;
+} catch(e){/* если не удалось — продолжаем без sale_id */}
 const {error}=await db.from('biz_debts').insert({client_id,amount,remaining:amount,kg,date,note,sale_id});
-if(error){toast('Ошибка','error');return;}
+if(error){toast('Ошибка: '+error.message,'error');return;}
 toast('Долг добавлен ✓','success');
 }
 await loadAll(); renderAll(); closeOverlay('debt-modal');
@@ -5911,16 +5969,124 @@ const idx=routeClients.indexOf(clientId);
 if(idx>=0) routeClients.splice(idx,1);
 else routeClients.push(clientId);
 renderClients();
+renderDayRoute();
+updateRouteBadge();
 }
-function buildRoute(){
-if(!routeClients.length){toast('Выберите клиентов для маршрута','error');return;}
-const addrs=routeClients.map(id=>{const c=clients.find(x=>x.id===id);return c?.address?encodeURIComponent('Алматы, '+c.address):null;}).filter(Boolean);
-if(!addrs.length){toast('У выбранных клиентов нет адресов','error');return;}
-// Яндекс маршрут через несколько точек
-const url='https://yandex.ru/maps/?rtt=auto&rtext='+addrs.join('~');
-window.open(url,'_blank');
+function addToRoute(clientId){
+if(!routeClients.includes(clientId)){
+routeClients.push(clientId);
+renderDayRoute();
+renderClients();
+updateRouteBadge();
+document.getElementById('route-search').value='';
+document.getElementById('route-search-results').innerHTML='';
+toast('Добавлен в маршрут ✓','success');
 }
-function clearRoute(){routeClients=[];renderClients();toast('Маршрут сброшен','success');}
+}
+function removeFromRoute(idx){
+routeClients.splice(idx,1);
+renderDayRoute();
+renderClients();
+updateRouteBadge();
+}
+function moveRouteClient(idx,dir){
+const newIdx=idx+dir;
+if(newIdx<0||newIdx>=routeClients.length) return;
+[routeClients[idx],routeClients[newIdx]]=[routeClients[newIdx],routeClients[idx]];
+renderDayRoute();
+}
+function clearDayRoute(){
+routeClients=[];
+renderDayRoute();
+renderClients();
+updateRouteBadge();
+toast('Маршрут очищен','success');
+}
+function updateRouteBadge(){
+const b=document.getElementById('badge-route');
+if(b){if(routeClients.length){b.style.display='inline';b.textContent=routeClients.length;}else b.style.display='none';}
+}
+function renderRouteSearch(){
+const q=(document.getElementById('route-search')?.value||'').toLowerCase().trim();
+const el=document.getElementById('route-search-results');
+if(!el) return;
+if(!q){el.innerHTML='';return;}
+const matches=clients.filter(c=>
+(c.name+' '+(c.shop||'')+' '+(c.phone||'')+' '+(c.district||'')).toLowerCase().includes(q)
+).slice(0,8);
+if(!matches.length){el.innerHTML='<span style="font-size:12px;color:var(--text2)">Не найдено</span>';return;}
+el.innerHTML=matches.map(c=>{
+const inRoute=routeClients.includes(c.id);
+const debt=debts.filter(d=>d.client_id===c.id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+return `<div onclick="${inRoute?'':'addToRoute(\''+c.id+'\')'}" style="background:var(--white);border:1px solid ${inRoute?'var(--accent)':'var(--border)'};border-radius:10px;padding:10px 14px;cursor:${inRoute?'default':'pointer'};opacity:${inRoute?'0.5':'1'};min-width:160px;flex:1">
+<div style="font-weight:600;font-size:13px">${c.name}${c.shop?' / '+c.shop:''} ${inRoute?'✓':''}</div>
+<div style="font-size:11px;color:var(--text2)">${c.address||'Нет адреса'}${debt?' · <span style="color:var(--red)">Долг: '+fmt(debt)+' ₸</span>':''}</div>
+</div>`;
+}).join('');
+}
+function renderDayRoute(){
+const list=document.getElementById('route-list');
+const empty=document.getElementById('route-empty');
+const summary=document.getElementById('route-summary');
+const goBtn=document.getElementById('route-go-btn');
+if(!list) return;
+if(!routeClients.length){
+list.innerHTML='';
+if(empty) empty.style.display='block';
+if(summary) summary.style.display='none';
+if(goBtn) goBtn.style.display='none';
+return;
+}
+if(empty) empty.style.display='none';
+if(summary) summary.style.display='block';
+if(goBtn) goBtn.style.display='inline-flex';
+const totalDebt=routeClients.reduce((a,id)=>{
+return a+debts.filter(d=>d.client_id===id&&d.remaining>0).reduce((s,d)=>s+d.remaining,0);
+},0);
+const countEl=document.getElementById('route-count-label');
+const debtEl=document.getElementById('route-debt-label');
+if(countEl) countEl.textContent=routeClients.length+' клиентов в маршруте';
+if(debtEl) debtEl.textContent=totalDebt?`Суммарный долг: ${fmt(totalDebt)} ₸`:'Долгов нет';
+list.innerHTML=routeClients.map((id,idx)=>{
+const c=clients.find(x=>x.id===id);
+if(!c) return '';
+const debt=debts.filter(d=>d.client_id===id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
+const lastSale=sales.filter(s=>s.client_id===id&&s.payment!=='debt')[0];
+const initials=(c.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+return `<div style="background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+<div style="font-size:20px;font-weight:800;color:var(--accent);min-width:28px;text-align:center">${idx+1}</div>
+<div style="width:40px;height:40px;border-radius:10px;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials}</div>
+<div style="flex:1;min-width:0">
+<div style="font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.name}${c.shop?' / '+c.shop:''}</div>
+<div style="font-size:12px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.address||'Нет адреса'}${c.phone?' · '+c.phone:''}</div>
+${debt?`<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:2px">💳 Долг: ${fmt(debt)} ₸</div>`:''}
+${lastSale?`<div style="font-size:11px;color:var(--text2)">Последняя покупка: ${dateStr(lastSale.date)}</div>`:''}
+</div>
+<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+<button class="btn btn-ghost btn-sm btn-icon" onclick="moveRouteClient(${idx},-1)" ${idx===0?'disabled style="opacity:0.3"':''} title="Выше">▲</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="moveRouteClient(${idx},1)" ${idx===routeClients.length-1?'disabled style="opacity:0.3"':''} title="Ниже">▼</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+${c.phone?`<a href="tel:${c.phone}" class="btn btn-ghost btn-sm btn-icon" style="text-decoration:none" onclick="event.stopPropagation()">📲</a>`:''}
+${c.address?`<a href="https://2gis.kz/almaty/search/${encodeURIComponent(c.address)}/route?to=${encodeURIComponent(c.address)}" target="_blank" class="btn btn-ghost btn-sm btn-icon" style="text-decoration:none">🗺️</a>`:''}
+<button class="btn btn-ghost btn-sm btn-icon" onclick="showClientDetail('${id}')" title="Профиль">👁</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="removeFromRoute(${idx})" title="Убрать" style="color:var(--red)">✕</button>
+</div>
+</div>`;
+}).join('');
+}
+function openDayRoute(){
+if(!routeClients.length){toast('Маршрут пустой','error');return;}
+const addrs=routeClients.map(id=>{
+const c=clients.find(x=>x.id===id);
+return c?.address?encodeURIComponent('Алматы, '+c.address):null;
+}).filter(Boolean);
+if(!addrs.length){toast('У клиентов нет адресов','error');return;}
+window.open('https://yandex.ru/maps/?rtt=auto&rtext='+addrs.join('~'),'_blank');
+}
+function buildRoute(){openDayRoute();}
+function clearRoute(){clearDayRoute();}
+
 
 // ===== ТЕГИ КЛИЕНТОВ =====
 const CLIENT_TAGS={vip:{label:'⭐ VIP',color:'var(--yellow)',bg:'var(--yellow-light)'},new:{label:'🆕 Новый',color:'var(--green)',bg:'var(--green-light)'},problem:{label:'⚠️ Проблемный',color:'var(--red)',bg:'var(--red-light)'},regular:{label:'🔄 Постоянный',color:'var(--accent)',bg:'var(--accent-light)'}};
@@ -5992,6 +6158,7 @@ event?.currentTarget?.classList.add('active');
 if(id==='analytics') setTimeout(renderAnalytics,100);
 if(id==='clients') closeClientProfile();
 if(id==='map') setTimeout(renderMap,100);
+if(id==='route'){renderDayRoute();renderRouteSearch();}
 if(window.innerWidth<=768) document.getElementById('sidebar').classList.remove('open');
 }
 function openOverlay(id){document.getElementById(id).classList.add('open');}
