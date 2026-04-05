@@ -1495,6 +1495,22 @@ tbody tr:hover { background:var(--bg); }
       <input type="text" class="form-input" id="new-pur-cat" placeholder="Новая категория закупки..." style="flex:1">
       <button class="btn btn-primary btn-sm" onclick="addPurCategory(document.getElementById('new-pur-cat').value);document.getElementById('new-pur-cat').value=''">+ Добавить</button>
     </div>
+
+    <div class="section-label">📦 Позиции товаров</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Товары которые продаёшь — пряники, шоколадные, рогалики и т.д.</div>
+    <div id="product-positions-list" style="margin-bottom:12px"></div>
+    <div style="background:var(--bg);border-radius:12px;padding:14px;margin-bottom:20px">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Название позиции</label><input type="text" class="form-input" id="new-pos-name" placeholder="Шоколадные пряники"></div>
+        <div class="form-group"><label class="form-label">Себестоим. (₸/кг)</label><input type="number" class="form-input" id="new-pos-cost" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Цена по умолч. (₸/кг)</label><input type="number" class="form-input" id="new-pos-price" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Единица</label><input type="text" class="form-input" id="new-pos-unit" placeholder="кг"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addProductPosition()">+ Добавить позицию</button>
+    </div>
+
     <button class="btn btn-primary" onclick="saveSettings()">💾 Сохранить настройки</button>
   </div>
 </div>
@@ -1699,8 +1715,20 @@ tbody tr:hover { background:var(--bg); }
       <div class="client-chips" id="qs-chips" style="margin-top:8px"></div>
       <input type="hidden" id="qs-client-id">
       <div id="qs-selected-client" style="margin-top:6px;font-size:12px;color:var(--accent);font-weight:600"></div>
+      <div id="qs-client-district" style="display:none;margin-top:4px;font-size:12px;color:var(--text2)">📍 <span id="qs-client-district-text"></span></div>
       <div id="qs-debt-warning" style="display:none;margin-top:8px;background:var(--red-light);border:1px solid var(--red);border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;color:var(--red)"></div>
     </div>
+
+    <!-- Позиция товара -->
+    <div class="form-group">
+      <label class="form-label">📦 Позиция товара</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="form-select" id="qs-position" onchange="applyPosition()" style="flex:1">
+          <option value="">— Выбрать позицию —</option>
+        </select>
+      </div>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Количество (<span id="qs-unit-label">кг</span>)</label>
@@ -1730,7 +1758,6 @@ tbody tr:hover { background:var(--bg); }
         <div class="pay-opt" data-m="debt" onclick="selectQsPay(this,'debt')"><span class="pay-icon">📋</span>В долг</div>
         <div class="pay-opt" data-m="mixed" onclick="selectQsPay(this,'mixed')"><span class="pay-icon">🔀</span>Смешанная</div>
       </div>
-      
       <div id="qs-mixed-fields" style="display:none;margin-top:12px;background:var(--bg);border-radius:10px;padding:12px">
         <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Укажи сколько каким способом (сумма должна совпасть с итого)</div>
         <div class="form-row">
@@ -2268,6 +2295,7 @@ await loadAll(); renderAll(); toast('Удалено','success');
 }
 async function init() {
 initTheme();
+loadProductPositions();
 await loadAll();
 await loadCallLogs();
 if(!checkLogin()) {
@@ -2589,6 +2617,11 @@ const client_id=document.getElementById('qs-client-id').value||null;
 const isFL=document.getElementById('qs-is-fl').checked;
 const date=document.getElementById('qs-date').value||today();
 const note=document.getElementById('qs-note').value||'';
+// Позиция товара
+const posIdx=document.getElementById('qs-position')?.value;
+const posName=posIdx!==''&&posIdx!==undefined&&productPositions[parseInt(posIdx)]
+? productPositions[parseInt(posIdx)].name : '';
+const noteWithPos=posName?(note?posName+' · '+note:posName):note;
 const editId=document.getElementById('qs-edit-id').value;
 if(!qty||!price){toast('Укажите количество и цену','error');return;}
 if(!isFL && !client_id){toast('⚠️ Выберите клиента','error');return;}
@@ -2605,7 +2638,7 @@ isSaving=true;
 const btn=document.getElementById('qs-save-btn');
 btn.disabled=true; btn.textContent='Сохранение...';
 const mixedData=qsPayMethod==='mixed'?{mix_cash:mixCash,mix_kaspi:mixKaspi,mix_kaspipay:mixKP,mix_debt:mixDebt}:{};
-const row={qty,price_per_kg:price,discount,cost_per_kg:cost,total,payment:qsPayMethod,client_id:isFL?null:client_id,date,note,is_fl:isFL,...mixedData};
+const row={qty,price_per_kg:price,discount,cost_per_kg:cost,total,payment:qsPayMethod,client_id:isFL?null:client_id,date,note:noteWithPos,is_fl:isFL,...mixedData};
 let error;
 if(editId) {({error}=await db.from('biz_sales').update(row).eq('id',editId));}
 else {({error}=await db.from('biz_sales').insert(row));}
@@ -2685,10 +2718,13 @@ document.getElementById('qs-client-search').value='';
 document.getElementById('qs-selected-client').textContent='';
 document.getElementById('qs-edit-id').value='';
 document.getElementById('qs-debt-warning').style.display='none';
+document.getElementById('qs-client-district').style.display='none';
 document.getElementById('qs-is-fl').checked=false;
 document.getElementById('qs-client-search').disabled=false;
 document.getElementById('qs-chips').style.opacity='1';
 document.getElementById('qs-mixed-fields').style.display='none';
+const posSel=document.getElementById('qs-position');
+if(posSel) posSel.value='';
 qsPayMethod='cash';
 document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-mixed'));
 document.querySelector('.pay-opt[data-m="cash"]').classList.add('selected');
@@ -2751,20 +2787,27 @@ document.getElementById('qs-client-id').value='';
 document.getElementById('qs-selected-client').textContent='';
 document.getElementById('qs-client-search').value='';
 document.getElementById('qs-debt-warning').style.display='none';
+document.getElementById('qs-client-district').style.display='none';
 } else {
 document.getElementById('qs-client-id').value=id;
 document.getElementById('qs-selected-client').textContent='✓ '+name;
 document.getElementById('qs-client-search').value=name;
 const c=clients.find(x=>x.id===id);
+// Показываем район и адрес
+const distEl=document.getElementById('qs-client-district');
+const distText=document.getElementById('qs-client-district-text');
+if(distEl&&distText){
+const info=[c?.district,c?.address].filter(Boolean).join(' · ');
+if(info){distText.textContent=info;distEl.style.display='block';}
+else distEl.style.display='none';
+}
 if(c?.custom_price) document.getElementById('qs-price').value=c.custom_price;
 if(c?.discount) document.getElementById('qs-discount').value=c.discount;
 calcQsTotal();
 const clientDebt=debts.filter(d=>d.client_id===id&&d.remaining>0).reduce((a,d)=>a+d.remaining,0);
-const clientKonus=konusSales.filter(k=>k.client_id===id&&k.remaining>0).reduce((a,k)=>a+k.remaining,0);
 const warnEl=document.getElementById('qs-debt-warning');
 let warns=[];
 if(clientDebt>0) warns.push(`💸 Долг: ${fmt(clientDebt)} ₸`);
-
 if(warns.length){warnEl.innerHTML='⚠️ Внимание! '+warns.join(' · ');warnEl.style.display='block';}
 else warnEl.style.display='none';
 }
@@ -5208,6 +5251,93 @@ else({error}=await db.from('biz_suppliers').insert(data));
 if(error){toast('Ошибка','error');return;}
 await loadAll(); renderAll(); closeOverlay('supplier-modal'); toast('Поставщик сохранён ✓','success');
 }
+// ===== ПОЗИЦИИ ТОВАРОВ =====
+let productPositions=[];
+function getProductPositions(){
+try{return JSON.parse(localStorage.getItem('biz_product_positions')||'[]');}
+catch(e){return[];}
+}
+function saveProductPositions(p){
+localStorage.setItem('biz_product_positions',JSON.stringify(p));
+productPositions=p;
+}
+function loadProductPositions(){
+productPositions=getProductPositions();
+renderProductPositions();
+populatePositionSelect();
+}
+function renderProductPositions(){
+const el=document.getElementById('product-positions-list'); if(!el) return;
+if(!productPositions.length){
+el.innerHTML='<div style="color:var(--text2);font-size:13px;padding:8px">Нет позиций — добавьте ниже</div>';
+return;
+}
+el.innerHTML=productPositions.map((p,i)=>`
+<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;margin-bottom:6px">
+<div style="flex:1">
+<div style="font-weight:600;font-size:13px">${p.name}</div>
+<div style="font-size:11px;color:var(--text2)">${p.unit||'кг'} · Цена: ${p.price?fmt(p.price)+' ₸':'-'} · Себест: ${p.cost?fmt(p.cost)+' ₸':'-'}</div>
+</div>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="editProductPosition(${i})" title="Редактировать">✏️</button>
+<button class="btn btn-ghost btn-sm btn-icon" onclick="deleteProductPosition(${i})" title="Удалить" style="color:var(--red)">🗑</button>
+</div>`).join('');
+}
+function populatePositionSelect(){
+const sel=document.getElementById('qs-position'); if(!sel) return;
+const cur=sel.value;
+sel.innerHTML='<option value="">— Выбрать позицию —</option>'+
+productPositions.map((p,i)=>`<option value="${i}">${p.name}${p.price?' ('+fmt(p.price)+' ₸/'+( p.unit||'кг')+')':''}</option>`).join('');
+if(cur) sel.value=cur;
+}
+function applyPosition(){
+const idx=document.getElementById('qs-position')?.value;
+if(idx==='') return;
+const p=productPositions[parseInt(idx)];
+if(!p) return;
+if(p.price) document.getElementById('qs-price').value=p.price;
+if(p.cost) document.getElementById('qs-cost').value=p.cost;
+// Обновляем единицу
+const u=p.unit||unit();
+['qs-unit-label','qs-unit-label2','qs-unit-label3'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=u;});
+calcQsTotal();
+}
+function addProductPosition(){
+const name=(document.getElementById('new-pos-name')?.value||'').trim();
+if(!name){toast('Укажите название позиции','error');return;}
+const price=parseFloat(document.getElementById('new-pos-price')?.value)||0;
+const cost=parseFloat(document.getElementById('new-pos-cost')?.value)||0;
+const posUnit=(document.getElementById('new-pos-unit')?.value||'кг').trim();
+const positions=getProductPositions();
+positions.push({name,price:price||null,cost:cost||null,unit:posUnit});
+saveProductPositions(positions);
+renderProductPositions();
+populatePositionSelect();
+['new-pos-name','new-pos-price','new-pos-cost','new-pos-unit'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+toast('Позиция добавлена ✓','success');
+}
+function deleteProductPosition(i){
+const positions=getProductPositions();
+positions.splice(i,1);
+saveProductPositions(positions);
+renderProductPositions();
+populatePositionSelect();
+toast('Удалено','success');
+}
+function editProductPosition(i){
+const p=productPositions[i];
+const name=prompt('Название:',p.name);
+if(!name) return;
+const price=prompt('Цена за '+( p.unit||'кг')+' (₸):',p.price||'');
+const cost=prompt('Себестоимость (₸):',p.cost||'');
+const posUnit=prompt('Единица:',p.unit||'кг');
+const positions=getProductPositions();
+positions[i]={name:name.trim(),price:parseFloat(price)||null,cost:parseFloat(cost)||null,unit:posUnit||'кг'};
+saveProductPositions(positions);
+renderProductPositions();
+populatePositionSelect();
+toast('Обновлено ✓','success');
+}
+
 // ===== ШАБЛОНЫ РАСХОДОВ =====
 function getExpTemplates(){try{return JSON.parse(localStorage.getItem('biz_exp_templates')||'[]');}catch(e){return[];}}
 function saveExpTemplates(t){localStorage.setItem('biz_exp_templates',JSON.stringify(t));}
