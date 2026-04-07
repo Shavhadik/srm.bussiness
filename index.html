@@ -525,9 +525,6 @@ tbody tr:hover { background:var(--bg); }
   <div class="nav-item" onclick="goPage('analytics')">
     <div class="nav-icon">📈</div> Графики
   </div>
-  <div class="nav-item" onclick="goPage('positions-stat')">
-    <div class="nav-icon">🍪</div> По позициям
-  </div>
   <div class="nav-item" onclick="goPage('report')">
     <div class="nav-icon">📅</div> Отчёты
   </div>
@@ -1055,46 +1052,8 @@ tbody tr:hover { background:var(--bg); }
 </div>
 
 
-<div class="page" id="page-positions-stat">
+<div class="page" id="page-analytics">
   <div class="page-header">
-    <div class="page-header-left"><h1>По позициям</h1><p>Статистика продаж по каждому товару</p></div>
-    <div class="page-header-actions">
-      <select class="filter-input" id="ps-period" onchange="renderPositionsStat()">
-        <option value="today">Сегодня</option>
-        <option value="week">Неделя</option>
-        <option value="month" selected>Месяц</option>
-        <option value="all">Всё время</option>
-      </select>
-    </div>
-  </div>
-  <div id="ps-no-positions" style="display:none;background:var(--yellow-light);border:1px solid var(--yellow);border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;color:var(--yellow)">
-    ⚠️ Позиции не настроены. Перейди в <b>Настройки → Позиции товаров</b> и добавь их, затем при создании продаж выбирай позицию.
-  </div>
-  <div id="ps-cards" class="cards" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:20px"></div>
-  <div id="ps-charts-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" class="chart-row">
-    <div class="chart-card" style="margin-bottom:0">
-      <div class="chart-title">📊 Выручка по позициям</div>
-      <canvas id="ps-chart-rev" style="max-height:200px"></canvas>
-    </div>
-    <div class="chart-card" style="margin-bottom:0">
-      <div class="chart-title">⚖️ Объём по позициям (кг)</div>
-      <canvas id="ps-chart-kg" style="max-height:200px"></canvas>
-    </div>
-  </div>
-  <div class="table-card">
-    <div class="table-header"><div class="table-title">Детали по каждой позиции</div></div>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Позиция</th><th>Продаж</th><th>Объём</th><th>Выручка</th><th>Ср. цена/кг</th><th>Прибыль</th><th>Доля выр.</th></tr></thead>
-      <tbody id="ps-table-tb"></tbody>
-    </table></div>
-  </div>
-  <div style="margin-top:16px">
-    <div class="section-label">📈 Тренд по дням (14 дней)</div>
-    <div class="chart-card"><canvas id="ps-chart-trend" style="max-height:220px"></canvas></div>
-  </div>
-</div>
-
-<div class="page" id="page-analytics">  <div class="page-header">
     <div class="page-header-left"><h1>Аналитика</h1><p>Графики и отчёты</p></div>
     <div class="page-header-actions">
       <select class="filter-input" id="an-range" onchange="renderAnalytics()">
@@ -1280,31 +1239,6 @@ tbody tr:hover { background:var(--bg); }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeOverlay('konus-pay-modal')">Отмена</button>
       <button class="btn btn-success" onclick="saveKonusPay()">✓ Оплачено</button>
-    </div>
-  </div>
-</div>
-
-
-<div class="overlay" id="pos-edit-modal">
-  <div class="modal modal-sm">
-    <div class="modal-header">
-      <div class="modal-title" id="pos-edit-title">✏️ Редактировать позицию</div>
-      <button class="modal-close" onclick="closeOverlay('pos-edit-modal')">✕</button>
-    </div>
-    <input type="hidden" id="pos-edit-idx">
-    <div class="form-group"><label class="form-label">Название позиции</label>
-      <input type="text" class="form-input" id="pos-edit-name" placeholder="Шоколадные пряники"></div>
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Цена (₸/ед)</label>
-        <input type="number" class="form-input" id="pos-edit-price" placeholder="0"></div>
-      <div class="form-group"><label class="form-label">Себестоим. (₸/ед)</label>
-        <input type="number" class="form-input" id="pos-edit-cost" placeholder="0"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Единица</label>
-      <input type="text" class="form-input" id="pos-edit-unit" placeholder="кг"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeOverlay('pos-edit-modal')">Отмена</button>
-      <button class="btn btn-primary" onclick="saveEditedPosition()">💾 Сохранить</button>
     </div>
   </div>
 </div>
@@ -1787,9 +1721,12 @@ tbody tr:hover { background:var(--bg); }
 
     <!-- Позиция товара -->
     <div class="form-group">
-      <label class="form-label">📦 Позиция товара <span id="qs-pos-selected-name" style="color:var(--accent);font-weight:700;font-size:12px;margin-left:6px"></span></label>
-      <div id="qs-position-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px"></div>
-      <input type="hidden" id="qs-position">
+      <label class="form-label">📦 Позиция товара</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select class="form-select" id="qs-position" onchange="applyPosition()" style="flex:1">
+          <option value="">— Выбрать позицию —</option>
+        </select>
+      </div>
     </div>
 
     <div class="form-row">
@@ -2642,7 +2579,6 @@ function openQuickSale() {
 document.getElementById('qs-edit-id').value='';
 document.getElementById('qs-save-btn').textContent='💾 Сохранить продажу';
 resetQsForm();
-populatePositionSelect();
 openOverlay('qs-modal');
 setTimeout(()=>document.getElementById('qs-qty').focus(),200);
 }
@@ -2654,18 +2590,7 @@ document.getElementById('qs-price').value=s.price_per_kg;
 document.getElementById('qs-discount').value=s.discount||0;
 document.getElementById('qs-cost').value=s.cost_per_kg||'';
 document.getElementById('qs-date').value=s.date;
-// Restore note without position prefix
-let noteVal=s.note||'';
-const positions=getProductPositions();
-let restoredPosIdx='';
-for(let i=0;i<positions.length;i++){
-if(noteVal.startsWith(positions[i].name)){
-restoredPosIdx=i;
-noteVal=noteVal.slice(positions[i].name.length).replace(/^ · /,'');
-break;
-}
-}
-document.getElementById('qs-note').value=noteVal;
+document.getElementById('qs-note').value=s.note||'';
 document.getElementById('qs-client-id').value=s.client_id||'';
 const c=clients.find(x=>x.id===s.client_id);
 document.getElementById('qs-selected-client').textContent=c?'✓ '+c.name:'';
@@ -2679,10 +2604,7 @@ const el=document.querySelector(`.pay-opt[data-m="${s.payment}"]`);
 if(el) el.classList.add(map[s.payment]||'selected');
 calcQsTotal();
 document.getElementById('qs-save-btn').textContent='💾 Обновить продажу';
-populatePositionSelect();
 openOverlay('qs-modal');
-// Restore position chip after modal opens
-if(restoredPosIdx!=='') setTimeout(()=>selectPositionChip(parseInt(restoredPosIdx)),50);
 }
 async function saveSale() {
 if(isSaving) return;
@@ -2803,11 +2725,6 @@ document.getElementById('qs-chips').style.opacity='1';
 document.getElementById('qs-mixed-fields').style.display='none';
 const posSel=document.getElementById('qs-position');
 if(posSel) posSel.value='';
-const posNameEl=document.getElementById('qs-pos-selected-name');
-if(posNameEl) posNameEl.textContent='';
-// Reset position chips
-const posChips=document.getElementById('qs-position-chips');
-if(posChips) posChips.querySelectorAll('.client-chip').forEach(el=>el.classList.remove('selected'));
 qsPayMethod='cash';
 document.querySelectorAll('.pay-opt').forEach(el=>el.classList.remove('selected','selected-kaspi','selected-kaspipay','selected-debt','selected-mixed'));
 document.querySelector('.pay-opt[data-m="cash"]').classList.add('selected');
@@ -2857,8 +2774,8 @@ el.style.color=ok?'var(--green)':sum>total?'var(--red)':'var(--accent)';
 function renderQsChips(filter='') {
 const container=document.getElementById('qs-chips');
 const selectedId=document.getElementById('qs-client-id').value;
-const list=filter?clients.filter(c=>(c.name+' '+(c.shop||'')+' '+(c.district||'')).toLowerCase().includes(filter.toLowerCase())):clients.slice(0,20);
-container.innerHTML=list.map(c=>`<div class="client-chip${c.id===selectedId?' selected':''}" onclick="selectQsClient('${c.id}','${escHtml(c.name)}')" style="display:flex;flex-direction:column;gap:1px;padding:5px 12px">${c.name}${c.shop?` <small style="opacity:0.7">/ ${c.shop}</small>`:''}${c.district?`<small style="font-size:10px;opacity:0.6;line-height:1">📍 ${c.district}</small>`:''}</div>`).join('');
+const list=filter?clients.filter(c=>(c.name+' '+(c.shop||'')).toLowerCase().includes(filter.toLowerCase())):clients.slice(0,20);
+container.innerHTML=list.map(c=>`<div class="client-chip${c.id===selectedId?' selected':''}" onclick="selectQsClient('${c.id}','${escHtml(c.name)}')">${c.name}${c.shop?` <small style="opacity:0.7">/ ${c.shop}</small>`:''}</div>`).join('');
 }
 function filterQsClients() {
 renderQsChips(document.getElementById('qs-client-search').value);
@@ -3262,7 +3179,6 @@ document.getElementById('qs-client-search').value=c.name+(c.shop?' / '+c.shop:''
 const sel=document.getElementById('qs-selected-client');
 if(sel) sel.textContent='✓ '+c.name;
 if(c.custom_price) document.getElementById('qs-price').value=c.custom_price;
-populatePositionSelect();
 openOverlay('qs-modal');
 }
 function dbtSearchClients() {
@@ -5367,36 +5283,23 @@ el.innerHTML=productPositions.map((p,i)=>`
 </div>`).join('');
 }
 function populatePositionSelect(){
-const container=document.getElementById('qs-position-chips'); if(!container) return;
-const curIdx=document.getElementById('qs-position').value;
-if(!productPositions.length){
-container.innerHTML='<span style="font-size:12px;color:var(--text2)">Нет позиций — добавь в Настройках →</span>';
-return;
-}
-container.innerHTML=productPositions.map((p,i)=>`<div class="client-chip${curIdx==i?' selected':''}" onclick="selectPositionChip(${i})" style="display:flex;flex-direction:column;gap:1px;padding:5px 12px;cursor:pointer">
-<span style="font-weight:600;font-size:12px">${p.name}</span>
-${p.price?`<small style="font-size:10px;opacity:0.7">${fmt(p.price)} ₸/${p.unit||'кг'}</small>`:''}
-</div>`).join('');
-}
-function selectPositionChip(idx){
-document.getElementById('qs-position').value=idx;
-// update chip highlight
-const container=document.getElementById('qs-position-chips');
-if(container) container.querySelectorAll('.client-chip').forEach((el,i)=>{
-el.classList.toggle('selected', i===idx);
-});
-const p=productPositions[idx]; if(!p) return;
-document.getElementById('qs-pos-selected-name').textContent='✓ '+p.name;
-if(p.price) document.getElementById('qs-price').value=p.price;
-if(p.cost) document.getElementById('qs-cost').value=p.cost;
-const u=p.unit||unit();
-['qs-unit-label','qs-unit-label2','qs-unit-label3'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=u;});
-calcQsTotal();
+const sel=document.getElementById('qs-position'); if(!sel) return;
+const cur=sel.value;
+sel.innerHTML='<option value="">— Выбрать позицию —</option>'+
+productPositions.map((p,i)=>`<option value="${i}">${p.name}${p.price?' ('+fmt(p.price)+' ₸/'+( p.unit||'кг')+')':''}</option>`).join('');
+if(cur) sel.value=cur;
 }
 function applyPosition(){
 const idx=document.getElementById('qs-position')?.value;
-if(idx===''||idx===undefined) return;
-selectPositionChip(parseInt(idx));
+if(idx==='') return;
+const p=productPositions[parseInt(idx)];
+if(!p) return;
+if(p.price) document.getElementById('qs-price').value=p.price;
+if(p.cost) document.getElementById('qs-cost').value=p.cost;
+// Обновляем единицу
+const u=p.unit||unit();
+['qs-unit-label','qs-unit-label2','qs-unit-label3'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=u;});
+calcQsTotal();
 }
 function addProductPosition(){
 const name=(document.getElementById('new-pos-name')?.value||'').trim();
@@ -5422,28 +5325,17 @@ toast('Удалено','success');
 }
 function editProductPosition(i){
 const p=productPositions[i];
-document.getElementById('pos-edit-idx').value=i;
-document.getElementById('pos-edit-title').textContent='✏️ '+p.name;
-document.getElementById('pos-edit-name').value=p.name||'';
-document.getElementById('pos-edit-price').value=p.price||'';
-document.getElementById('pos-edit-cost').value=p.cost||'';
-document.getElementById('pos-edit-unit').value=p.unit||'кг';
-openOverlay('pos-edit-modal');
-}
-function saveEditedPosition(){
-const i=parseInt(document.getElementById('pos-edit-idx').value);
-const name=(document.getElementById('pos-edit-name').value||'').trim();
-if(!name){toast('Укажите название','error');return;}
-const price=parseFloat(document.getElementById('pos-edit-price').value)||null;
-const cost=parseFloat(document.getElementById('pos-edit-cost').value)||null;
-const posUnit=(document.getElementById('pos-edit-unit').value||'кг').trim();
+const name=prompt('Название:',p.name);
+if(!name) return;
+const price=prompt('Цена за '+( p.unit||'кг')+' (₸):',p.price||'');
+const cost=prompt('Себестоимость (₸):',p.cost||'');
+const posUnit=prompt('Единица:',p.unit||'кг');
 const positions=getProductPositions();
-positions[i]={name,price,cost,unit:posUnit};
+positions[i]={name:name.trim(),price:parseFloat(price)||null,cost:parseFloat(cost)||null,unit:posUnit||'кг'};
 saveProductPositions(positions);
 renderProductPositions();
 populatePositionSelect();
-closeOverlay('pos-edit-modal');
-toast('Позиция обновлена ✓','success');
+toast('Обновлено ✓','success');
 }
 
 // ===== ШАБЛОНЫ РАСХОДОВ =====
@@ -6326,115 +6218,7 @@ function buildRoute(){openDayRoute();}
 function clearRoute(){clearDayRoute();}
 
 
-// ===== СТАТИСТИКА ПО ПОЗИЦИЯМ =====
-let psCharts={};
-function renderPositionsStat(){
-if(!document.getElementById('page-positions-stat')?.classList.contains('active')) return;
-const period=document.getElementById('ps-period')?.value||'month';
-const t=today(), m=thisMonth();
-const now=new Date();
-const dow=now.getDay()===0?6:now.getDay()-1;
-const wS=new Date(now); wS.setDate(now.getDate()-dow);
-const wSstr=wS.toISOString().split('T')[0];
-let filtered=sales.filter(s=>s.payment!=='debt');
-if(period==='today') filtered=filtered.filter(s=>s.date===t);
-else if(period==='week') filtered=filtered.filter(s=>s.date>=wSstr);
-else if(period==='month') filtered=filtered.filter(s=>s.date?.startsWith(m));
-
-// Determine position name from note field (saved as "PositionName · note" or just "PositionName")
-const positions=getProductPositions();
-const noPos=document.getElementById('ps-no-positions');
-if(noPos) noPos.style.display=positions.length?'none':'block';
-
-// Group sales by position name
-const groups={};
-// Add "Без позиции" group for untagged sales
-groups['(без позиции)']={sales:[],rev:0,kg:0,profit:0,cnt:0};
-positions.forEach(p=>{ groups[p.name]={sales:[],rev:0,kg:0,profit:0,cnt:0}; });
-
-filtered.forEach(s=>{
-// find which position this sale belongs to (note starts with position name)
-let matched=null;
-for(const p of positions){
-if((s.note||'').startsWith(p.name)){matched=p.name;break;}
-}
-const key=matched||(positions.length?'(без позиции)':null);
-if(!key) return;
-if(!groups[key]) groups[key]={sales:[],rev:0,kg:0,profit:0,cnt:0};
-groups[key].sales.push(s);
-groups[key].rev+=s.total;
-groups[key].kg+=s.qty;
-groups[key].cnt++;
-if(s.cost_per_kg) groups[key].profit+=(s.price_per_kg-s.cost_per_kg)*s.qty-(s.discount||0);
-});
-
-const totalRev=Object.values(groups).reduce((a,g)=>a+g.rev,0);
-// Cards
-const cardsEl=document.getElementById('ps-cards');
-if(cardsEl){
-const colors=['var(--accent)','var(--green)','var(--purple)','var(--yellow)','var(--red)'];
-const entries=Object.entries(groups).filter(([k,g])=>g.cnt>0||k!=='(без позиции)');
-cardsEl.innerHTML=entries.map(([name,g],ci)=>`
-<div class="card" style="border-top:3px solid ${colors[ci%colors.length]}">
-<div class="card-label">${name}</div>
-<div class="card-value" style="color:${colors[ci%colors.length]};font-size:18px">${fmt(g.rev)} ₸</div>
-<div class="card-sub">${g.cnt} продаж · ${fmt(g.kg)} ${unit()}</div>
-${g.profit?`<div style="font-size:11px;color:var(--green);margin-top:4px">Прибыль: ${fmt(g.profit)} ₸</div>`:''}
-</div>`).join('');
-}
-
-// Table
-const tb=document.getElementById('ps-table-tb');
-if(tb){
-const rows=Object.entries(groups).filter(([,g])=>g.cnt>0).sort((a,b)=>b[1].rev-a[1].rev);
-if(!rows.length){tb.innerHTML='<tr><td colspan="7" class="empty-state">Нет продаж с позициями за период</td></tr>';}
-else tb.innerHTML=rows.map(([name,g])=>{
-const avgPrice=g.kg>0?Math.round(g.rev/g.kg):0;
-const share=totalRev>0?Math.round(g.rev/totalRev*100):0;
-return`<tr>
-<td><b>${name}</b></td>
-<td>${g.cnt}</td>
-<td>${fmt(g.kg)} ${unit()}</td>
-<td><b>${fmt(g.rev)} ₸</b></td>
-<td>${avgPrice?fmt(avgPrice)+' ₸':'—'}</td>
-<td style="color:${g.profit>0?'var(--green)':g.profit<0?'var(--red)':'var(--text2)'}">${g.profit?fmt(g.profit)+' ₸':'—'}</td>
-<td><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:100px;height:6px"><div style="background:var(--accent);height:100%;border-radius:100px;width:${share}%"></div></div><span style="font-size:11px;color:var(--text2);min-width:30px">${share}%</span></div></td>
-</tr>`;}).join('');
-}
-
-// Charts
-const posNames=Object.keys(groups).filter(k=>groups[k].cnt>0);
-const revVals=posNames.map(k=>groups[k].rev);
-const kgVals=posNames.map(k=>groups[k].kg);
-const chartColors=['#4f6ef7','#10b981','#8b5cf6','#f59e0b','#ef4444','#06b6d4','#ec4899'];
-
-if(psCharts.rev) psCharts.rev.destroy();
-const revCtx=document.getElementById('ps-chart-rev');
-if(revCtx&&posNames.length) psCharts.rev=new Chart(revCtx,{type:'doughnut',data:{labels:posNames,datasets:[{data:revVals,backgroundColor:chartColors,borderWidth:0}]},options:{plugins:{legend:{labels:{color:'#6b7280',font:{size:11}},position:'bottom'}},cutout:'55%'}});
-
-if(psCharts.kg) psCharts.kg.destroy();
-const kgCtx=document.getElementById('ps-chart-kg');
-if(kgCtx&&posNames.length) psCharts.kg=new Chart(kgCtx,{type:'bar',data:{labels:posNames,datasets:[{label:'Кг',data:kgVals,backgroundColor:chartColors,borderRadius:6}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#9ca3af',font:{size:11}}},y:{ticks:{color:'#9ca3af'}}}}});
-
-// Trend chart (last 14 days by position)
-const dates14=[];
-for(let i=13;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);dates14.push(d.toISOString().split('T')[0]);}
-const mainPositions=positions.slice(0,5); // top 5 positions for trend
-if(psCharts.trend) psCharts.trend.destroy();
-const trendCtx=document.getElementById('ps-chart-trend');
-if(trendCtx&&mainPositions.length){
-psCharts.trend=new Chart(trendCtx,{type:'line',data:{
-labels:dates14.map(d=>d.slice(5)),
-datasets:mainPositions.map((p,pi)=>({
-label:p.name,
-data:dates14.map(d=>sales.filter(s=>s.date===d&&s.payment!=='debt'&&(s.note||'').startsWith(p.name)).reduce((a,s)=>a+s.total,0)),
-borderColor:chartColors[pi],backgroundColor:chartColors[pi]+'22',fill:true,tension:0.3,borderWidth:2,pointRadius:3
-}))
-},options:{plugins:{legend:{labels:{color:'#6b7280',font:{size:11}},position:'bottom'}},scales:{x:{ticks:{color:'#9ca3af',font:{size:10},maxRotation:45}},y:{ticks:{color:'#9ca3af'}}}}});
-}
-}
-
-
+// ===== ТЕГИ КЛИЕНТОВ =====
 const CLIENT_TAGS={vip:{label:'⭐ VIP',color:'var(--yellow)',bg:'var(--yellow-light)'},new:{label:'🆕 Новый',color:'var(--green)',bg:'var(--green-light)'},problem:{label:'⚠️ Проблемный',color:'var(--red)',bg:'var(--red-light)'},regular:{label:'🔄 Постоянный',color:'var(--accent)',bg:'var(--accent-light)'}};
 function getClientTag(c) {
 return c.tags||c.tag||'';
@@ -6502,7 +6286,6 @@ document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
 document.getElementById('page-'+id).classList.add('active');
 event?.currentTarget?.classList.add('active');
 if(id==='analytics') setTimeout(renderAnalytics,100);
-if(id==='positions-stat') setTimeout(renderPositionsStat,100);
 if(id==='clients') closeClientProfile();
 if(id==='map') setTimeout(renderMap,100);
 if(id==='route'){renderDayRoute();renderRouteSearch();}
